@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScholaCite - Biblical Studies Citation Formatter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ScholaCite</h1>
+            <p class="tagline">Biblical Studies Citation Formatter</p>
+        </header>
+
+        <main>
+            <div class="usage-counter">
+                <span id="usage-count">0</span> of 1 free conversions used this month
+            </div>
+
+            <div class="paywall-message" id="paywall-message" style="display: none;">
+                You have used your free conversion this month. 
+                <button class="upgrade-button" id="upgrade-button">Upgrade for unlimited — $5/month</button>
+            </div>
+
+            <form id="citation-form">
+                <div class="step">
+                    <h2>Step 1: Upload Document</h2>
+                    <div class="upload-area" id="upload-area">
+                        <p>Drag &amp; drop your PDF or Word document here</p>
+                        <p class="file-types">Supports .pdf and .docx files (max 10MB)</p>
+                        <input type="file" id="file-input" accept=".pdf,.docx" hidden>
+                        <button type="button" id="browse-button">Browse Files</button>
+                    </div>
+                    <div class="file-info" id="file-info" style="display: none;">
+                        <span id="file-name"></span>
+                        <button type="button" id="remove-file">×</button>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h2>Step 2: Choose Citation Style</h2>
+                    <select id="style-select" required>
+                        <option value="">Select a citation style</option>
+                        <option value="sbl">SBL/JBL (Footnote)</option>
+                        <option value="jsot">JSOT (Author-date or Footnote)</option>
+                        <option value="jsnt">JSNT (SAGE Harvard)</option>
+                        <option value="generic_sbl">Generic SBL</option>
+                    </select>
+                </div>
+
+                <div class="step">
+                    <h2>Step 3: Format Citation</h2>
+                    <button type="submit" id="format-button" disabled>Format Citation</button>
+                </div>
+            </form>
+
+            <div class="result" id="result" style="display: none;">
+                <h2>Your Formatted Citation</h2>
+                <div class="citation-output">
+                    <textarea id="citation-text" readonly></textarea>
+                    <button id="copy-button">Copy</button>
+                </div>
+                <div class="success-message" id="success-message"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>ScholaCite © 2023 | Biblical Studies Citation Formatter</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const browseButton = document.getElementById('browse-button');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const removeFile = document.getElementById('remove-file');
+        const styleSelect = document.getElementById('style-select');
+        const formatButton = document.getElementById('format-button');
+        const citationForm = document.getElementById('citation-form');
+        const result = document.getElementById('result');
+        const citationText = document.getElementById('citation-text');
+        const copyButton = document.getElementById('copy-button');
+        const usageCount = document.getElementById('usage-count');
+        const paywallMessage = document.getElementById('paywall-message');
+        const upgradeButton = document.getElementById('upgrade-button');
+        const successMessage = document.getElementById('success-message');
+
+        // State
+        let selectedFile = null;
+        let conversionsUsed = parseInt(localStorage.getItem('conversionsUsed')) || 0;
+        const maxConversions = 1;
+
+        // Initialize
+        function init() {
+            updateUsageCounter();
+            checkConversionLimit();
+        }
+
+        // Update usage counter display
+        function updateUsageCounter() {
+            usageCount.textContent = conversionsUsed;
+        }
+
+        // Check if user has reached conversion limit
+        function checkConversionLimit() {
+            if (conversionsUsed >= maxConversions) {
+                paywallMessage.style.display = 'block';
+                formatButton.disabled = true;
+            } else {
+                paywallMessage.style.display = 'none';
+                formatButton.disabled = !selectedFile || !styleSelect.value;
+            }
+        }
+
+        // Event Listeners
+        browseButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            if (e.dataTransfer.files.length) {
+                handleFileSelection(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+
+        removeFile.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            uploadArea.style.display = 'block';
+            formatButton.disabled = true;
+        });
+
+        styleSelect.addEventListener('change', () => {
+            formatButton.disabled = !selectedFile || !styleSelect.value || conversionsUsed >= maxConversions;
+        });
+
+        citationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (conversionsUsed >= maxConversions) {
+                paywallMessage.style.display = 'block';
+                return;
+            }
+            
+            formatButton.textContent = 'Formatting...';
+            formatButton.disabled = true;
+            
+            try {
+                // Convert file to base64
+                const base64 = await fileToBase64(selectedFile);
+                
+                // Send to backend
+                const response = await fetch('http://localhost:8000/format-citation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_base64: base64,
+                        filename: selectedFile.name,
+                        style: styleSelect.value
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Display result
+                citationText.value = data.citation;
+                result.style.display = 'block';
+                
+                // Update usage
+                conversionsUsed++;
+                localStorage.setItem('conversionsUsed', conversionsUsed.toString());
+                updateUsageCounter();
+                checkConversionLimit();
+                
+                // Show success message
+                successMessage.textContent = 'Citation formatted successfully!';
+                setTimeout(() => {
+                    successMessage.textContent = '';
+                }, 3000);
+                
+            } catch (error) {
+                alert(`Error formatting citation: ${error.message}`);
+                console.error(error);
+            } finally {
+                formatButton.textContent = 'Format Citation';
+                formatButton.disabled = false;
+            }
+        });
+
+        copyButton.addEventListener('click', () => {
+            citationText.select();
+            document.execCommand('copy');
+            
+            // Show feedback
+            const originalText = copyButton.textContent;
+            copyButton.textContent = 'Copied!';
+            setTimeout(() => {
+                copyButton.textContent = originalText;
+            }, 2000);
+        });
+
+        upgradeButton.addEventListener('click', () => {
+            alert('Subscription functionality would be implemented here with Stripe integration.');
+        });
+
+        // Helper Functions
+        function handleFileSelection(file) {
+            // Validate file type
+            const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please select a PDF or Word document (.docx)');
+                return;
+            }
+            
+            // Validate file size (10MB max)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size exceeds 10MB limit');
+                return;
+            }
+            
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileInfo.style.display = 'flex';
+            uploadArea.style.display = 'none';
+            formatButton.disabled = !styleSelect.value && conversionsUsed < maxConversions;
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    // Remove the data URL prefix
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Reset monthly usage
+        function resetMonthlyUsage() {
+            const lastReset = localStorage.getItem('lastReset');
+            const now = new Date();
+            
+            if (!lastReset || new Date(lastReset).getMonth() !== now.getMonth()) {
+                localStorage.setItem('conversionsUsed', '0');
+                localStorage.setItem('lastReset', now.toISOString());
+                conversionsUsed = 0;
+            }
+        }
+
+        // Initialize app
+        resetMonthlyUsage();
+        init();
+    </script>
+</body>
+</html>

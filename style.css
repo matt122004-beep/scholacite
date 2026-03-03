@@ -1,0 +1,287 @@
+/* Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Georgia, serif;
+    background-color: #ffffff;
+    color: #333333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+    border-bottom: 2px solid #1a2744;
+}
+
+h1 {
+    font-size: 2.5rem;
+    color: #1a2744;
+    margin-bottom: 10px;
+}
+
+.tagline {
+    font-size: 1.2rem;
+    color: #666666;
+}
+
+/* Usage Counter */
+.usage-counter {
+    background-color: #f0f4f8;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: #1a2744;
+}
+
+.paywall-message {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.upgrade-button {
+    background-color: #1a2744;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    font-size: 1rem;
+}
+
+.upgrade-button:hover {
+    background-color: #0d1a33;
+}
+
+/* Steps */
+.step {
+    margin-bottom: 30px;
+}
+
+.step h2 {
+    color: #1a2744;
+    margin-bottom: 15px;
+    font-size: 1.4rem;
+}
+
+/* Upload Area */
+.upload-area {
+    border: 2px dashed #cccccc;
+    border-radius: 10px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #fafafa;
+}
+
+.upload-area:hover,
+.upload-area.drag-over {
+    border-color: #1a2744;
+    background-color: #f0f4f8;
+}
+
+.upload-area p {
+    margin-bottom: 15px;
+}
+
+.file-types {
+    font-size: 0.9rem;
+    color: #666666;
+}
+
+#browse-button {
+    background-color: #1a2744;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    font-size: 1rem;
+}
+
+#browse-button:hover {
+    background-color: #0d1a33;
+}
+
+.file-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e8f4f8;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+#remove-file {
+    background: none;
+    border: 2px solid #dc3545;
+    color: #dc3545;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#remove-file:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Select Dropdown */
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    font-family: Georgia, serif;
+    font-size: 1rem;
+    background-color: white;
+}
+
+/* Format Button */
+#format-button {
+    width: 100%;
+    padding: 15px;
+    background-color: #1a2744;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    font-size: 1.1rem;
+    transition: background-color 0.3s;
+}
+
+#format-button:hover:not(:disabled) {
+    background-color: #0d1a33;
+}
+
+#format-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Result */
+.result {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eeeeee;
+}
+
+.result h2 {
+    color: #1a2744;
+    margin-bottom: 15px;
+}
+
+.citation-output {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+#citation-text {
+    width: 100%;
+    min-height: 150px;
+    padding: 15px;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    font-family: Georgia, serif;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+#copy-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #1a2744;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: Georgia, serif;
+}
+
+#copy-button:hover {
+    background-color: #0d1a33;
+}
+
+.success-message {
+    color: #28a745;
+    text-align: center;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eeeeee;
+    color: #666666;
+    font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .tagline {
+        font-size: 1rem;
+    }
+    
+    .step h2 {
+        font-size: 1.2rem;
+    }
+    
+    .upload-area {
+        padding: 30px 15px;
+    }
+    
+    #browse-button {
+        padding: 10px 20px;
+    }
+    
+    #format-button {
+        padding: 12px;
+        font-size: 1rem;
+    }
+    
+    .paywall-message {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
