@@ -6,10 +6,15 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #f8f9fa;
+    color: #1a2744;
+    background-color: #faf7f2;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    color: #1a2744;
 }
 
 .container {
@@ -21,7 +26,7 @@ body {
 
 /* Header */
 header {
-    background-color: #2c3e50;
+    background-color: #1a2744;
     color: white;
     padding: 2rem 0;
     text-align: center;
@@ -37,74 +42,73 @@ h1 {
     opacity: 0.9;
 }
 
-/* Usage tracker */
-.usage-tracker {
-    text-align: right;
-    padding: 1rem 0;
-    font-weight: bold;
-    color: #2c3e50;
+/* Hero section */
+.hero {
+    text-align: center;
+    padding: 2rem 0;
+    margin: 1rem 0;
 }
 
-/* Paywall overlay */
-.paywall-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+.hero h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
 }
 
-.paywall-content {
+.hero p {
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto;
+    color: #1a2744;
+}
+
+/* Citation form */
+.citation-form {
     background-color: white;
     padding: 2rem;
     border-radius: 8px;
-    text-align: center;
-    max-width: 500px;
-    width: 90%;
-}
-
-.paywall-content h2 {
-    margin-bottom: 1rem;
-    color: #2c3e50;
-}
-
-.paywall-content p {
-    margin-bottom: 1.5rem;
-}
-
-.hidden {
-    display: none;
-}
-
-/* Upload section */
-.upload-section {
+    box-shadow: 0 4px 12px rgba(26, 39, 68, 0.1);
     margin: 2rem 0;
 }
 
-.drop-area {
-    border: 2px dashed #3498db;
-    border-radius: 8px;
-    padding: 3rem 2rem;
-    text-align: center;
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+#citation-input {
+    width: 100%;
+    min-height: 150px;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+.style-selector {
+    margin-bottom: 1.5rem;
+}
+
+.style-selector label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+#citation-style {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
     background-color: white;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.drop-area:hover,
-.drop-area.highlight {
-    background-color: #f1f8ff;
-    border-color: #2980b9;
-}
-
-.drop-area p {
-    margin-bottom: 1rem;
-    color: #7f8c8d;
 }
 
 .btn {
@@ -113,6 +117,7 @@ h1 {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-family: 'Inter', sans-serif;
     font-size: 1rem;
     font-weight: 600;
     text-decoration: none;
@@ -121,70 +126,32 @@ h1 {
 }
 
 .btn.primary {
-    background-color: #3498db;
+    background-color: #b8860b;
     color: white;
 }
 
 .btn.primary:hover {
-    background-color: #2980b9;
+    background-color: #a67509;
+    transform: translateY(-2px);
 }
 
 .btn.secondary {
-    background-color: #ecf0f1;
-    color: #2c3e50;
+    background-color: #1a2744;
+    color: white;
 }
 
 .btn.secondary:hover {
-    background-color: #d5dbdb;
+    background-color: #0f1a30;
 }
 
-/* Progress bar */
-.progress-bar {
-    height: 20px;
-    background-color: #ecf0f1;
-    border-radius: 10px;
-    margin: 1rem 0;
-    overflow: hidden;
-    position: relative;
+.btn.tertiary {
+    background-color: #faf7f2;
+    color: #1a2744;
+    border: 1px solid #1a2744;
 }
 
-.progress-fill {
-    height: 100%;
-    background-color: #3498db;
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-.progress-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 0.8rem;
-    font-weight: bold;
-}
-
-/* Citation style selector */
-.citation-style {
-    margin: 2rem 0;
-    background-color: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.citation-style h2 {
-    margin-bottom: 1rem;
-    color: #2c3e50;
-}
-
-.style-selector select {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-    background-color: white;
+.btn.tertiary:hover {
+    background-color: #e8e2d9;
 }
 
 /* Result section */
@@ -193,17 +160,17 @@ h1 {
     background-color: white;
     padding: 1.5rem;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(26, 39, 68, 0.1);
 }
 
 .result-section h2 {
     margin-bottom: 1rem;
-    color: #2c3e50;
+    color: #1a2744;
 }
 
 .citation-card {
-    background-color: #f8f9fa;
-    border: 1px solid #eee;
+    background-color: #faf7f2;
+    border: 1px solid #e8e2d9;
     border-radius: 4px;
     padding: 1.5rem;
 }
@@ -212,36 +179,34 @@ h1 {
     white-space: pre-wrap;
     word-break: break-word;
     margin-bottom: 1rem;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: 'Inter', monospace;
     font-size: 0.9rem;
     line-height: 1.5;
+    color: #1a2744;
 }
 
-/* Error section */
-.error-section {
-    margin: 2rem 0;
-    background-color: #fadbd8;
-    padding: 1.5rem;
-    border-radius: 8px;
-    border-left: 4px solid #e74c3c;
+.button-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.error-section h3 {
-    color: #c0392b;
-    margin-bottom: 0.5rem;
+.button-group .btn {
+    flex: 1;
+    min-width: 150px;
 }
 
-#error-text {
-    margin-bottom: 1rem;
+.hidden {
+    display: none;
 }
 
 /* Footer */
 footer {
-    background-color: #ecf0f1;
+    background-color: #1a2744;
+    color: white;
     padding: 2rem 0;
     text-align: center;
     margin-top: 3rem;
-    color: #7f8c8d;
 }
 
 /* Responsive design */
@@ -258,18 +223,26 @@ footer {
         font-size: 1rem;
     }
     
-    .drop-area {
-        padding: 2rem 1rem;
+    .hero h2 {
+        font-size: 1.5rem;
     }
     
-    .usage-tracker {
-        text-align: center;
+    .citation-form {
+        padding: 1.5rem;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .button-group .btn {
+        width: 100%;
     }
 }
 
 /* Print styles */
 @media print {
-    header, footer, .upload-section, .citation-style, .btn {
+    header, footer, .citation-form {
         display: none;
     }
     

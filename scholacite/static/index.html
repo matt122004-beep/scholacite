@@ -3,78 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scholacite - Academic Citation Formatter</title>
+    <title>ScholaCite - Academic Citation Formatter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <div class="container">
-            <h1>Scholacite</h1>
-            <p class="subtitle">Professional Citation Formatting for Academic & Biblical Studies</p>
+            <h1>ScholaCite</h1>
+            <p class="subtitle">Professional Citation Formatting for Biblical Studies</p>
         </div>
     </header>
 
     <main class="container">
-        <div class="usage-tracker">
-            <span id="usage-count">Uses: 0</span> / <span id="max-uses">10</span> (Free Tier)
-        </div>
-
-        <div id="paywall-overlay" class="paywall-overlay hidden">
-            <div class="paywall-content">
-                <h2>Usage Limit Reached</h2>
-                <p>You've reached your free usage limit of 10 citations.</p>
-                <p>Upgrade to premium for unlimited citation formatting.</p>
-                <button id="upgrade-btn" class="btn primary">Upgrade Now</button>
-                <button id="close-paywall" class="btn secondary">Close</button>
-            </div>
-        </div>
-
-        <section class="upload-section">
-            <div id="drop-area" class="drop-area">
-                <form class="my-form">
-                    <p>Drag & drop your document here, or click to select</p>
-                    <input type="file" id="fileElem" accept=".pdf,.docx" multiple>
-                    <label class="btn primary" for="fileElem">Select File</label>
-                </form>
-            </div>
-            <div id="progress-bar" class="progress-bar hidden">
-                <div class="progress-fill"></div>
-                <span class="progress-text">Processing...</span>
-            </div>
+        <section class="hero">
+            <h2>Format citations perfectly for your biblical studies research</h2>
+            <p>Paste your source information and get properly formatted Turabian or SBL citations instantly.</p>
         </section>
 
-        <section class="citation-style">
-            <h2>Citation Style</h2>
+        <section class="citation-form">
+            <div class="input-group">
+                <label for="citation-input">Paste your citation source:</label>
+                <textarea id="citation-input" placeholder="Enter book, journal article, or other source information..."></textarea>
+            </div>
+
             <div class="style-selector">
-                <select id="citation-style" aria-label="Select citation style">
-                    <option value="sbl">Society of Biblical Literature (SBL)</option>
-                    <option value="jsot">Journal for the Study of the Old Testament (JSOT)</option>
-                    <option value="jsnt">Journal for the Study of the New Testament (JSNT)</option>
-                    <option value="generic">Generic Academic</option>
+                <label for="citation-style">Citation Style:</label>
+                <select id="citation-style">
+                    <option value="sbl">SBL (Society of Biblical Literature)</option>
+                    <option value="turabian">Turabian</option>
+                    <option value="chicago">Chicago</option>
                 </select>
             </div>
+
+            <button id="format-btn" class="btn primary">Format Citation</button>
         </section>
 
         <section id="result-section" class="result-section hidden">
             <h2>Your Formatted Citation</h2>
             <div class="citation-card">
                 <pre id="citation-output"></pre>
-                <button id="copy-btn" class="btn secondary">Copy to Clipboard</button>
-            </div>
-        </section>
-
-        <section class="error-section hidden" id="error-section">
-            <div class="error-message">
-                <h3>Error Processing File</h3>
-                <p id="error-text"></p>
-                <button id="retry-btn" class="btn primary">Try Again</button>
+                <div class="button-group">
+                    <button id="copy-btn" class="btn secondary">Copy to Clipboard</button>
+                    <button id="export-btn" class="btn tertiary">Export Citation</button>
+                </div>
             </div>
         </section>
     </main>
 
     <footer>
         <div class="container">
-            <p>&copy; 2026 Scholacite. Professional citation formatting made simple.</p>
+            <p>&copy; 2026 Scholacite. Free professional citation formatting for biblical studies.</p>
         </div>
     </footer>
 
