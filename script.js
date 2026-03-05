@@ -22,9 +22,48 @@ document.addEventListener('DOMContentLoaded', function () {
   let currentFile = null;
   let extractedFootnotes = [];
   let parsedCitations = [];
+  let reformattedCitations = [];
+
+  // ── Additional DOM refs for v3.1 ──
+  const reformattedList = document.getElementById('reformatted-list');
+  const reformatStyleLabel = document.getElementById('reformat-style-label');
 
   // ══════════════════════════════════════════════════════════
-  //  STYLE RULES (Phase 2 will fill these in fully)
+  //  JOURNAL ABBREVIATIONS (SBLHS §8 subset)
+  // ══════════════════════════════════════════════════════════
+  const JOURNAL_ABBREVS = {
+    'Journal of Biblical Literature': 'JBL',
+    'Journal for the Study of the New Testament': 'JSNT',
+    'Journal for the Study of the Old Testament': 'JSOT',
+    'New Testament Studies': 'NTS',
+    'Catholic Biblical Quarterly': 'CBQ',
+    'Zeitschrift für die neutestamentliche Wissenschaft': 'ZNW',
+    'Harvard Theological Review': 'HTR',
+    'Novum Testamentum': 'NovT',
+    'Biblica': 'Bib',
+    'Vetus Testamentum': 'VT',
+    'Revue Biblique': 'RB',
+    'Theologische Zeitschrift': 'TZ',
+    'Journal of Theological Studies': 'JTS',
+    'Scottish Journal of Theology': 'SJT',
+    'Bulletin of the American Schools of Oriental Research': 'BASOR',
+    'Israel Exploration Journal': 'IEJ',
+    'Journal of the American Oriental Society': 'JAOS',
+    'Journal of Near Eastern Studies': 'JNES',
+    'Journal of Semitic Studies': 'JSS',
+    'Interpretation': 'Int',
+    'Expository Times': 'ExpTim',
+    'Tyndale Bulletin': 'TynBul',
+    'Westminster Theological Journal': 'WTJ',
+    'Biblical Archaeologist': 'BA',
+    'Biblical Archaeology Review': 'BAR',
+    'Journal of the Evangelical Theological Society': 'JETS',
+    'Currents in Biblical Research': 'CBR',
+    'Early Christianity': 'EC',
+  };
+
+  // ══════════════════════════════════════════════════════════
+  //  STYLE RULES
   // ══════════════════════════════════════════════════════════
   const STYLES = {
     JBL: {
@@ -32,24 +71,195 @@ document.addEventListener('DOMContentLoaded', function () {
       abbrev: 'JBL',
       base: 'SBLHS',
       notes: 'SBL Handbook of Style, 2nd ed. Footnote citation format.',
-      // Phase 2: abbreviation lists, ibid rules, bibliography vs footnote format, etc.
-      rules: {}
+      abbreviateJournals: true,  // Use SBLHS abbreviations
+      rules: {
+        // First citation formats
+        bookFirst: function (c) {
+          return authorFirstLast(c.author) + ', <em>' + c.title + '</em> (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        journalFirst: function (c, style) {
+          var jName = style.abbreviateJournals ? abbreviateJournal(c.journal) : c.journal;
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
+        },
+        chapterFirst: function (c) {
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>, ed. ' + c.editor + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        // Subsequent citation formats (short form)
+        bookSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        journalSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + '," ' + (c.pages ? c.pages + '.' : '.');
+        },
+        chapterSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + ',"' + (c.pages ? ' ' + c.pages : '') + '.';
+        }
+      }
     },
     JSNT: {
       name: 'Journal for the Study of the New Testament',
       abbrev: 'JSNT',
       base: 'SBLHS',
-      notes: 'Follows SBLHS with slight variations for Bloomsbury/SAGE house style.',
-      rules: {}
+      notes: 'Follows SBLHS with SAGE house style. Full journal titles in bibliography.',
+      abbreviateJournals: false,  // JSNT uses full journal titles
+      rules: {
+        bookFirst: function (c) {
+          return authorFirstLast(c.author) + ', <em>' + c.title + '</em> (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        journalFirst: function (c, style) {
+          var jName = style.abbreviateJournals ? abbreviateJournal(c.journal) : c.journal;
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
+        },
+        chapterFirst: function (c) {
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>, ed. ' + c.editor + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        bookSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        journalSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + '," ' + (c.pages ? c.pages + '.' : '.');
+        },
+        chapterSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + ',"' + (c.pages ? ' ' + c.pages : '') + '.';
+        }
+      }
     },
     JSOT: {
       name: 'Journal for the Study of the Old Testament',
       abbrev: 'JSOT',
       base: 'SBLHS',
-      notes: 'Follows SBLHS with slight variations for Bloomsbury/SAGE house style.',
-      rules: {}
+      notes: 'Follows SBLHS with SAGE house style. Nearly identical to JSNT rules.',
+      abbreviateJournals: false,  // JSOT uses full journal titles
+      rules: {
+        bookFirst: function (c) {
+          return authorFirstLast(c.author) + ', <em>' + c.title + '</em> (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        journalFirst: function (c, style) {
+          var jName = style.abbreviateJournals ? abbreviateJournal(c.journal) : c.journal;
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
+        },
+        chapterFirst: function (c) {
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>, ed. ' + c.editor + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        bookSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + c.pages : '') + '.';
+        },
+        journalSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + '," ' + (c.pages ? c.pages + '.' : '.');
+        },
+        chapterSubsequent: function (c) {
+          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + ',"' + (c.pages ? ' ' + c.pages : '') + '.';
+        }
+      }
     }
   };
+
+  // ══════════════════════════════════════════════════════════
+  //  FORMATTING HELPERS
+  // ══════════════════════════════════════════════════════════
+
+  // Strip trailing commas/periods from a title
+  function cleanTitle(t) {
+    return (t || '').replace(/[,.\s]+$/, '').trim();
+  }
+
+  // "Last, First M." → "First M. Last"
+  function authorFirstLast(author) {
+    if (!author) return '';
+    var parts = author.split(',');
+    if (parts.length >= 2) {
+      return parts.slice(1).join(',').trim() + ' ' + parts[0].trim();
+    }
+    return author; // already in First Last format
+  }
+
+  // "Last, First M." → "Last" or "First M. Last" → "Last"
+  function authorLastOnly(author) {
+    if (!author) return '';
+    var parts = author.split(',');
+    if (parts.length >= 2) return parts[0].trim();
+    // Try "First Last" format
+    var words = author.trim().split(/\s+/);
+    return words[words.length - 1];
+  }
+
+  // Shorten title to first ~4 significant words
+  function shortTitle(title) {
+    if (!title) return '';
+    var clean = title.replace(/^[""\u201c\u201d]+|[""\u201c\u201d]+$/g, '').trim();
+    var words = clean.split(/\s+/);
+    var stopWords = ['a', 'an', 'the', 'of', 'in', 'on', 'and', 'to', 'for', 'with', 'from'];
+    // Take first 4 content words (skip leading articles)
+    var significant = [];
+    for (var i = 0; i < words.length && significant.length < 4; i++) {
+      significant.push(words[i]);
+    }
+    return significant.join(' ');
+  }
+
+  // Look up SBLHS journal abbreviation
+  function abbreviateJournal(journalName) {
+    if (!journalName) return '';
+    // Exact match
+    if (JOURNAL_ABBREVS[journalName]) return JOURNAL_ABBREVS[journalName];
+    // Case-insensitive match
+    var lower = journalName.toLowerCase();
+    for (var key in JOURNAL_ABBREVS) {
+      if (key.toLowerCase() === lower) return JOURNAL_ABBREVS[key];
+    }
+    // Partial match
+    for (var key in JOURNAL_ABBREVS) {
+      if (lower.indexOf(key.toLowerCase()) >= 0 || key.toLowerCase().indexOf(lower) >= 0) {
+        return JOURNAL_ABBREVS[key];
+      }
+    }
+    return journalName; // no abbreviation found
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  REFORMATTING ENGINE
+  // ══════════════════════════════════════════════════════════
+
+  function reformatCitations(parsed, styleName) {
+    var style = STYLES[styleName];
+    if (!style) return parsed.map(function (c) { return { original: c.raw, formatted: c.raw, type: c.type, isFirst: true }; });
+
+    var rules = style.rules;
+    var cited = {}; // track first vs subsequent by author+title key
+
+    return parsed.map(function (c) {
+      if (c.type === 'unknown') {
+        return { original: c.raw, formatted: c.raw, formattedHtml: escapeHtml(c.raw), type: 'unknown', isFirst: true };
+      }
+
+      // Build a citation key to track first vs subsequent
+      var citeKey = (c.author || '').toLowerCase() + '::' + (c.title || c.bookTitle || '').toLowerCase();
+      var isFirst = !cited[citeKey];
+      cited[citeKey] = true;
+
+      var formattedHtml;
+      if (c.type === 'journal') {
+        formattedHtml = isFirst ? rules.journalFirst(c, style) : rules.journalSubsequent(c);
+      } else if (c.type === 'book') {
+        formattedHtml = isFirst ? rules.bookFirst(c) : rules.bookSubsequent(c);
+      } else if (c.type === 'chapter') {
+        formattedHtml = isFirst ? rules.chapterFirst(c) : rules.chapterSubsequent(c);
+      } else {
+        formattedHtml = escapeHtml(c.raw);
+      }
+
+      // Plain text version (strip HTML tags)
+      var formatted = formattedHtml.replace(/<[^>]+>/g, '');
+
+      return {
+        original: c.raw,
+        formatted: formatted,
+        formattedHtml: formattedHtml,
+        type: c.type,
+        isFirst: isFirst
+      };
+    });
+  }
 
   // ══════════════════════════════════════════════════════════
   //  CITATION PATTERN DETECTION
@@ -238,6 +448,36 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function renderReformatted(results, styleName) {
+    reformattedList.innerHTML = '';
+    var style = STYLES[styleName];
+    reformatStyleLabel.textContent = 'Formatted for: ' + style.name + ' (' + style.base + ')';
+
+    results.forEach(function (r, i) {
+      var div = document.createElement('div');
+      div.className = 'reformat-item';
+
+      var badgeClass = r.type === 'unknown' ? 'unknown' : (r.isFirst ? 'first' : 'subsequent');
+      var badgeLabel = r.type === 'unknown' ? 'Unchanged' : (r.isFirst ? 'First citation' : 'Subsequent');
+
+      div.innerHTML =
+        '<div class="reformat-num">Footnote ' + (i + 1) +
+        ' <span class="cite-type-badge ' + badgeClass + '">' + badgeLabel + '</span></div>' +
+        '<div class="reformat-row">' +
+          '<div class="reformat-col">' +
+            '<div class="reformat-col-label original">Original</div>' +
+            '<div class="original-text">' + escapeHtml(r.original) + '</div>' +
+          '</div>' +
+          '<div class="reformat-col">' +
+            '<div class="reformat-col-label formatted">Reformatted</div>' +
+            '<div class="formatted-text">' + r.formattedHtml + '</div>' +
+          '</div>' +
+        '</div>';
+
+      reformattedList.appendChild(div);
+    });
+  }
+
   function field(label, value) {
     if (!value) return '';
     return '<div><strong>' + label + ':</strong> ' + escapeHtml(value) + '</div>';
@@ -330,9 +570,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return parseCitation(fn.text);
       });
 
-      // Step 3: Render
+      // Step 3: Reformat
+      statusText.textContent = 'Applying style rules…';
+      var selectedJournal = document.querySelector('input[name="journal"]:checked').value;
+      reformattedCitations = reformatCitations(parsedCitations, selectedJournal);
+
+      // Step 4: Render all tabs
       renderFootnotes(footnotes);
       renderParsed(parsedCitations);
+      renderReformatted(reformattedCitations, selectedJournal);
 
       const detected = parsedCitations.filter(function (c) { return c.type !== 'unknown'; }).length;
       footnoteCount.textContent = footnotes.length + ' footnotes · ' + detected + ' citations detected';
@@ -340,6 +586,15 @@ document.addEventListener('DOMContentLoaded', function () {
       resultsSection.classList.remove('hidden');
       statusBar.classList.add('hidden');
       reformatBtn.disabled = false;
+      downloadBtn.disabled = false;
+
+      // Switch to reformatted tab
+      tabs.forEach(function (t) { t.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+      var reformatTab = document.querySelector('.tab[data-tab="reformatted"]');
+      if (reformatTab) reformatTab.classList.add('active');
+      var reformatPanel = document.getElementById('panel-reformatted');
+      if (reformatPanel) reformatPanel.classList.add('active');
 
       // Scroll to results
       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -370,49 +625,24 @@ document.addEventListener('DOMContentLoaded', function () {
   // ══════════════════════════════════════════════════════════
 
   downloadBtn.addEventListener('click', function () {
-    if (!extractedFootnotes.length) return;
+    if (!reformattedCitations.length) return;
     const selectedJournal = document.querySelector('input[name="journal"]:checked').value;
     const style = STYLES[selectedJournal];
 
-    // For now, export extracted + parsed data as a text summary
-    let content = 'ScholaCite v3.0 — Citation Analysis\n';
+    let content = 'ScholaCite v3.1 — Reformatted Citations\n';
     content += 'Target style: ' + style.name + ' (' + style.base + ')\n';
     content += '═'.repeat(50) + '\n\n';
 
-    parsedCitations.forEach(function (c, i) {
-      content += 'Footnote ' + (i + 1) + ' [' + c.type.toUpperCase() + ']\n';
-      if (c.type === 'journal') {
-        content += '  Author: ' + c.author + '\n';
-        content += '  Title: ' + c.title + '\n';
-        content += '  Journal: ' + c.journal + '\n';
-        content += '  Volume: ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + '\n';
-        content += '  Year: ' + c.year + '\n';
-        content += '  Pages: ' + c.pages + '\n';
-      } else if (c.type === 'book') {
-        content += '  Author: ' + c.author + '\n';
-        content += '  Title: ' + c.title + '\n';
-        content += '  Place: ' + c.city + '\n';
-        content += '  Publisher: ' + c.publisher + '\n';
-        content += '  Year: ' + c.year + '\n';
-        content += '  Pages: ' + c.pages + '\n';
-      } else if (c.type === 'chapter') {
-        content += '  Author: ' + c.author + '\n';
-        content += '  Chapter: ' + c.title + '\n';
-        content += '  Book: ' + c.bookTitle + '\n';
-        content += '  Editor: ' + c.editor + '\n';
-        content += '  Place: ' + c.city + '\n';
-        content += '  Publisher: ' + c.publisher + '\n';
-        content += '  Year: ' + c.year + '\n';
-        content += '  Pages: ' + c.pages + '\n';
-      } else {
-        content += '  [Unparsed] ' + c.raw.substring(0, 150) + '\n';
-      }
-      content += '\n';
+    reformattedCitations.forEach(function (r, i) {
+      var label = r.type === 'unknown' ? 'UNCHANGED' : (r.isFirst ? 'FIRST' : 'SUBSEQUENT');
+      content += 'Footnote ' + (i + 1) + ' [' + label + ']\n';
+      content += '  Original:    ' + r.original + '\n';
+      content += '  Reformatted: ' + r.formatted + '\n\n';
     });
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    saveAs(blob, 'scholacite-analysis.txt');
-    showToast('Analysis exported!');
+    saveAs(blob, 'scholacite-reformatted.txt');
+    showToast('Reformatted citations exported!');
   });
 
   // ══════════════════════════════════════════════════════════
@@ -441,5 +671,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2500);
   }
 
-  console.log('ScholaCite v3.0 loaded');
+  console.log('ScholaCite v3.1 loaded');
 });
