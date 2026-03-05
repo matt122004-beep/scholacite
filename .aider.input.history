@@ -1,0 +1,96 @@
+
+# 2026-03-03 02:21:26.537436
++Build a complete biblical studies citation formatter web app called ScholaCite. Here are the full requirements:
++
++## App: ScholaCite — Biblical Studies Citation Formatter
++
++### What it does
++Users upload a PDF or Word document (a journal article or book chapter). The app extracts the bibliographic metadata and formats it as a proper citation in the chosen journal style.
++
++### Citation styles to support
++1. SBL/JBL — SBL Handbook of Style 2nd ed. + Chicago 17th. Footnote style only.
++2. JSOT — Author-date OR footnote (flexible).
++3. JSNT — SAGE Harvard (author-date system).
++4. Generic SBL — Standard SBL for books, journal articles, essays in collections.
++
++### Freemium model
++- 1 free conversion per user per month tracked by localStorage
++- After 1st use show: 'You have used your free conversion this month. Upgrade for unlimited — $5/month.'
++- Paywall placeholder button (no real Stripe yet)
++
++### Tech stack
++- Pure HTML + CSS + vanilla JS frontend (index.html + style.css)
++- Python FastAPI backend (main.py)
++- PyMuPDF (fitz) for PDF extraction
++- python-docx for DOCX extraction
++- Claude API (anthropic library, model: claude-3-5-haiku-20241022) to extract metadata and format citation
++- requirements.txt
++- README.md with setup instructions
++
++### UI Design
++- Clean academic feel. White background, serif font Georgia, dark navy #1a2744 accents
++- Title: ScholaCite with tagline Biblical Studies Citation Formatter
++- Step 1: Upload file drag-and-drop zone accepting .pdf and .docx
++- Step 2: Choose citation style dropdown
++- Step 3: Format Citation button
++- Output: formatted citation in copyable text box with Copy button
++- Usage counter: X of 1 free conversions used this month
++- Mobile responsive
++
++### API
++- Backend runs on port 8000 with CORS enabled
++- POST /format-citation accepts JSON: {file_base64, filename, style}
++- Returns JSON: {citation, metadata}
++- ANTHROPIC_API_KEY from environment variable
++- Max file size 10MB
++- Handle errors gracefully
++
++Create all files: index.html, style.css, main.py, requirements.txt, README.md
+
+# 2026-03-03 02:21:26.537586
++Build a complete biblical studies citation formatter web app called ScholaCite. Here are the full requirements:
++
++## App: ScholaCite — Biblical Studies Citation Formatter
++
++### What it does
++Users upload a PDF or Word document (a journal article or book chapter). The app extracts the bibliographic metadata and formats it as a proper citation in the chosen journal style.
++
++### Citation styles to support
++1. SBL/JBL — SBL Handbook of Style 2nd ed. + Chicago 17th. Footnote style only.
++2. JSOT — Author-date OR footnote (flexible).
++3. JSNT — SAGE Harvard (author-date system).
++4. Generic SBL — Standard SBL for books, journal articles, essays in collections.
++
++### Freemium model
++- 1 free conversion per user per month tracked by localStorage
++- After 1st use show: 'You have used your free conversion this month. Upgrade for unlimited — $5/month.'
++- Paywall placeholder button (no real Stripe yet)
++
++### Tech stack
++- Pure HTML + CSS + vanilla JS frontend (index.html + style.css)
++- Python FastAPI backend (main.py)
++- PyMuPDF (fitz) for PDF extraction
++- python-docx for DOCX extraction
++- Claude API (anthropic library, model: claude-3-5-haiku-20241022) to extract metadata and format citation
++- requirements.txt
++- README.md with setup instructions
++
++### UI Design
++- Clean academic feel. White background, serif font Georgia, dark navy #1a2744 accents
++- Title: ScholaCite with tagline Biblical Studies Citation Formatter
++- Step 1: Upload file drag-and-drop zone accepting .pdf and .docx
++- Step 2: Choose citation style dropdown
++- Step 3: Format Citation button
++- Output: formatted citation in copyable text box with Copy button
++- Usage counter: X of 1 free conversions used this month
++- Mobile responsive
++
++### API
++- Backend runs on port 8000 with CORS enabled
++- POST /format-citation accepts JSON: {file_base64, filename, style}
++- Returns JSON: {citation, metadata}
++- ANTHROPIC_API_KEY from environment variable
++- Max file size 10MB
++- Handle errors gracefully
++
++Create all files: index.html, style.css, main.py, requirements.txt, README.md

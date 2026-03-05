@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scholacite - Academic Citation Formatter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Scholacite</h1>
+            <p class="subtitle">Professional Citation Formatting for Academic & Biblical Studies</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="usage-tracker">
+            <span id="usage-count">Uses: 0</span> / <span id="max-uses">10</span> (Free Tier)
+        </div>
+
+        <div id="paywall-overlay" class="paywall-overlay hidden">
+            <div class="paywall-content">
+                <h2>Usage Limit Reached</h2>
+                <p>You've reached your free usage limit of 10 citations.</p>
+                <p>Upgrade to premium for unlimited citation formatting.</p>
+                <button id="upgrade-btn" class="btn primary">Upgrade Now</button>
+                <button id="close-paywall" class="btn secondary">Close</button>
+            </div>
+        </div>
+
+        <section class="upload-section">
+            <div id="drop-area" class="drop-area">
+                <form class="my-form">
+                    <p>Drag & drop your document here, or click to select</p>
+                    <input type="file" id="fileElem" accept=".pdf,.docx" multiple>
+                    <label class="btn primary" for="fileElem">Select File</label>
+                </form>
+            </div>
+            <div id="progress-bar" class="progress-bar hidden">
+                <div class="progress-fill"></div>
+                <span class="progress-text">Processing...</span>
+            </div>
+        </section>
+
+        <section class="citation-style">
+            <h2>Citation Style</h2>
+            <div class="style-selector">
+                <select id="citation-style" aria-label="Select citation style">
+                    <option value="sbl">Society of Biblical Literature (SBL)</option>
+                    <option value="jsot">Journal for the Study of the Old Testament (JSOT)</option>
+                    <option value="jsnt">Journal for the Study of the New Testament (JSNT)</option>
+                    <option value="generic">Generic Academic</option>
+                </select>
+            </div>
+        </section>
+
+        <section id="result-section" class="result-section hidden">
+            <h2>Your Formatted Citation</h2>
+            <div class="citation-card">
+                <pre id="citation-output"></pre>
+                <button id="copy-btn" class="btn secondary">Copy to Clipboard</button>
+            </div>
+        </section>
+
+        <section class="error-section hidden" id="error-section">
+            <div class="error-message">
+                <h3>Error Processing File</h3>
+                <p id="error-text"></p>
+                <button id="retry-btn" class="btn primary">Try Again</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Scholacite. Professional citation formatting made simple.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
