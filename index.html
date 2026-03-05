@@ -3,62 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ScholaCite - Academic Citation Formatter</title>
+    <title>ScholaCite v3 — Academic Citation Reformatter</title>
+    <meta name="description" content="Upload a .docx academic paper, select a target journal style, and get reformatted citations. Supports JBL, JSNT, JSOT.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <header>
         <div class="container">
             <h1>ScholaCite</h1>
-            <p class="subtitle">Professional Citation Formatting for Biblical Studies</p>
+            <p class="subtitle">Academic Citation Reformatter</p>
         </div>
     </header>
 
     <main class="container">
-        <section class="hero">
-            <h2>Format citations perfectly for your biblical studies research</h2>
-            <p>Paste your source information and get properly formatted Turabian or SBL citations instantly.</p>
-        </section>
 
-        <section class="citation-form">
-            <div class="input-group">
-                <label for="citation-input">Paste your citation source:</label>
-                <textarea id="citation-input" placeholder="Enter book, journal article, or other source information..."></textarea>
-            </div>
+        <!-- Upload Section -->
+        <section class="upload-section">
+            <h2>Upload Your Paper</h2>
+            <p class="section-desc">Drop a <code>.docx</code> file below to extract and reformat its citations.</p>
 
-            <div class="style-selector">
-                <label for="citation-style">Citation Style:</label>
-                <select id="citation-style">
-                    <option value="sbl">SBL (Society of Biblical Literature)</option>
-                    <option value="turabian">Turabian</option>
-                    <option value="chicago">Chicago</option>
-                </select>
-            </div>
-
-            <button id="format-btn" class="btn primary">Format Citation</button>
-        </section>
-
-        <section id="result-section" class="result-section hidden">
-            <h2>Your Formatted Citation</h2>
-            <div class="citation-card">
-                <pre id="citation-output"></pre>
-                <div class="button-group">
-                    <button id="copy-btn" class="btn secondary">Copy to Clipboard</button>
-                    <button id="export-btn" class="btn tertiary">Export Citation</button>
+            <div class="dropzone" id="dropzone">
+                <div class="dropzone-content">
+                    <div class="dropzone-icon">📄</div>
+                    <p class="dropzone-label">Drag &amp; drop your <strong>.docx</strong> file here</p>
+                    <p class="dropzone-or">or</p>
+                    <label class="btn tertiary browse-btn" for="file-input">Browse Files</label>
+                    <input type="file" id="file-input" accept=".docx" hidden>
                 </div>
+                <div class="dropzone-active-overlay" id="dropzone-overlay">Drop file here</div>
+            </div>
+
+            <div class="file-info hidden" id="file-info">
+                <span class="file-icon">📎</span>
+                <span class="file-name" id="file-name"></span>
+                <button class="btn-icon" id="clear-file" title="Remove file">&times;</button>
             </div>
         </section>
+
+        <!-- Journal Selector -->
+        <section class="journal-section" id="journal-section">
+            <h2>Target Journal Style</h2>
+            <p class="section-desc">All journals below follow <em>SBL Handbook of Style</em> (2nd ed.) as their base.</p>
+
+            <div class="journal-options">
+                <label class="journal-card">
+                    <input type="radio" name="journal" value="JBL" checked>
+                    <div class="journal-card-inner">
+                        <strong>JBL</strong>
+                        <span>Journal of Biblical Literature</span>
+                    </div>
+                </label>
+                <label class="journal-card">
+                    <input type="radio" name="journal" value="JSNT">
+                    <div class="journal-card-inner">
+                        <strong>JSNT</strong>
+                        <span>Journal for the Study of the New Testament</span>
+                    </div>
+                </label>
+                <label class="journal-card">
+                    <input type="radio" name="journal" value="JSOT">
+                    <div class="journal-card-inner">
+                        <strong>JSOT</strong>
+                        <span>Journal for the Study of the Old Testament</span>
+                    </div>
+                </label>
+            </div>
+        </section>
+
+        <!-- Action -->
+        <section class="action-section" id="action-section">
+            <button class="btn primary reformat-btn" id="reformat-btn" disabled>
+                Reformat Citations
+            </button>
+        </section>
+
+        <!-- Status -->
+        <div class="status-bar hidden" id="status-bar">
+            <div class="status-spinner"></div>
+            <span class="status-text" id="status-text">Processing…</span>
+        </div>
+
+        <!-- Preview / Results -->
+        <section class="results-section hidden" id="results-section">
+            <div class="results-header">
+                <h2>Extracted Footnotes</h2>
+                <span class="footnote-count" id="footnote-count"></span>
+            </div>
+
+            <div class="results-tabs">
+                <button class="tab active" data-tab="footnotes">Footnotes</button>
+                <button class="tab" data-tab="parsed">Parsed Citations</button>
+            </div>
+
+            <div class="tab-panel active" id="panel-footnotes">
+                <div id="footnotes-list" class="footnotes-list"></div>
+            </div>
+
+            <div class="tab-panel" id="panel-parsed">
+                <div id="parsed-list" class="parsed-list"></div>
+            </div>
+
+            <div class="results-actions">
+                <button class="btn secondary" id="download-btn" disabled>Download Reformatted .docx</button>
+            </div>
+        </section>
+
     </main>
 
     <footer>
         <div class="container">
-            <p>&copy; 2026 Scholacite. Free professional citation formatting for biblical studies.</p>
+            <p>ScholaCite v3.0 · Client-side only · No data leaves your browser</p>
         </div>
     </footer>
 
+    <!-- Libraries -->
+    <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/docx@9.5.0/build/index.umd.min.js"></script>
+    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
