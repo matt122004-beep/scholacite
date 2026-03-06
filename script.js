@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ── State ──
   let currentFile = null;
   let extractedFootnotes = [];
+  let extractedBodyParagraphs = [];
   let parsedCitations = [];
   let reformattedCitations = [];
 
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
           return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
         },
         chapterFirst: function (c) {
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>, ed. ' + c.editor + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>' + (c.editor ? ', ed. ' + c.editor : '') + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
         },
         // Subsequent citation formats (short form)
         bookSubsequent: function (c) {
@@ -111,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
           return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
         },
         chapterFirst: function (c) {
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>, ed. ' + c.editor + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>' + (c.editor ? ', ed. ' + c.editor : '') + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
         },
         bookSubsequent: function (c) {
           return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + c.pages : '') + '.';
@@ -139,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
           return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
         },
         chapterFirst: function (c) {
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>, ed. ' + c.editor + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>' + (c.editor ? ', ed. ' + c.editor : '') + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
         },
         bookSubsequent: function (c) {
           return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + c.pages : '') + '.';
@@ -267,21 +268,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Regex patterns for common citation formats
   const PATTERNS = {
+    // Chapter in edited volume (strict): Author, "Chapter," in *Book*, ed. Editor (City: Publisher, Year), Pages.
+    chapterStrict: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*in\s+(?:\*)?(.+?)(?:\*)?,\s*eds?\.\s*(.+?)\s*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+
+    // Chapter in edited volume (loose): Author, "Chapter," in *Book* (City: Publisher, Year), Pages.
+    // Catches chapters without explicit "ed." marker
+    chapterLoose: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*in\s+(?:\*)?(.+?)(?:\*)?\s*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+
     // Journal article: Author, "Article Title," *Journal* Volume (Year): Pages.
-    journal: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*(?:in\s+)?(?:\*)?([A-Z][\w\s&:]+?)(?:\*)?[\s,]*(\d+)(?:[.,]\s*(?:no\.\s*)?(\d+))?\s*\((\d{4})\):\s*([\d\-–—,\s]+)/,
+    journal: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*(?:\*)?([A-Z][\w\s&:]+?)(?:\*)?[\s,]*(\d+)(?:[.,]\s*(?:no\.\s*)?(\d+))?\s*\((\d{4})\):\s*([\d\-–—,\s]+)/,
 
     // Book: Author, *Title* (City: Publisher, Year), Pages.
-    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
-
-    // Chapter in edited volume: Author, "Chapter," in *Book*, ed. Editor (City: Publisher, Year), Pages.
-    chapter: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*in\s+(?:\*)?(.+?)(?:\*)?,\s*ed\.\s*(.+?)\s*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/
+    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/
   };
 
   function parseCitation(text) {
     const trimmed = text.trim();
 
-    // Try chapter first (most specific — contains "in" + "ed.")
-    let m = trimmed.match(PATTERNS.chapter);
+    // Try chapter first (most specific — contains "in" + "ed./eds.")
+    let m = trimmed.match(PATTERNS.chapterStrict);
     if (m) {
       return {
         type: 'chapter',
@@ -293,6 +298,23 @@ document.addEventListener('DOMContentLoaded', function () {
         publisher: m[6].trim(),
         year: m[7],
         pages: (m[8] || '').trim(),
+        raw: trimmed
+      };
+    }
+
+    // Try chapter loose (has "in" but no "ed.")
+    m = trimmed.match(PATTERNS.chapterLoose);
+    if (m) {
+      return {
+        type: 'chapter',
+        author: m[1].trim(),
+        title: m[2].trim(),
+        bookTitle: m[3].trim(),
+        editor: '',
+        city: m[4].trim(),
+        publisher: m[5].trim(),
+        year: m[6],
+        pages: (m[7] || '').trim(),
         raw: trimmed
       };
     }
@@ -382,7 +404,22 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    return { footnotes, html, messages };
+    // Extract body paragraphs (text content without footnotes section)
+    const bodyParagraphs = [];
+    const bodyEls = doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6');
+    bodyEls.forEach(function (el) {
+      const text = el.textContent.trim();
+      if (text) {
+        bodyParagraphs.push({
+          text: text,
+          tag: el.tagName.toLowerCase(),
+          // Check for footnote references (superscript links)
+          hasFootnoteRefs: el.querySelectorAll('a[href^="#footnote-"]').length > 0
+        });
+      }
+    });
+
+    return { footnotes, bodyParagraphs, html, messages };
   }
 
   // ══════════════════════════════════════════════════════════
@@ -553,9 +590,10 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       // Step 1: Extract
       statusText.textContent = 'Extracting footnotes…';
-      const { footnotes } = await extractFootnotes(currentFile);
+      const { footnotes, bodyParagraphs } = await extractFootnotes(currentFile);
 
       extractedFootnotes = footnotes;
+      extractedBodyParagraphs = bodyParagraphs;
 
       if (footnotes.length === 0) {
         statusText.textContent = 'No footnotes found in this document.';
@@ -624,26 +662,114 @@ document.addEventListener('DOMContentLoaded', function () {
   //  DOWNLOAD (stub — Phase 2 will do full reformat)
   // ══════════════════════════════════════════════════════════
 
-  downloadBtn.addEventListener('click', function () {
-    if (!reformattedCitations.length) return;
+  downloadBtn.addEventListener('click', async function () {
+    if (!reformattedCitations.length) {
+      showToast('Please upload a .docx file first.', true);
+      return;
+    }
+
     const selectedJournal = document.querySelector('input[name="journal"]:checked').value;
-    const style = STYLES[selectedJournal];
 
-    let content = 'ScholaCite v3.1 — Reformatted Citations\n';
-    content += 'Target style: ' + style.name + ' (' + style.base + ')\n';
-    content += '═'.repeat(50) + '\n\n';
+    // Show processing state
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = 'Generating .docx…';
 
-    reformattedCitations.forEach(function (r, i) {
-      var label = r.type === 'unknown' ? 'UNCHANGED' : (r.isFirst ? 'FIRST' : 'SUBSEQUENT');
-      content += 'Footnote ' + (i + 1) + ' [' + label + ']\n';
-      content += '  Original:    ' + r.original + '\n';
-      content += '  Reformatted: ' + r.formatted + '\n\n';
+    try {
+      const D = docx; // docx.js UMD global
+
+      // Build footnote definitions
+      var footnoteMap = {};
+      reformattedCitations.forEach(function (r, i) {
+        var fnId = i + 1;
+        // Parse the formatted HTML into text runs (handle <em> for italics)
+        var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
+        footnoteMap[fnId] = { children: [new D.Paragraph({ children: runs })] };
+      });
+
+      // Build body paragraphs with footnote references
+      var docParagraphs = [];
+      var fnIdx = 0;
+
+      extractedBodyParagraphs.forEach(function (bp) {
+        var heading = null;
+        if (bp.tag === 'h1') heading = D.HeadingLevel.HEADING_1;
+        else if (bp.tag === 'h2') heading = D.HeadingLevel.HEADING_2;
+        else if (bp.tag === 'h3') heading = D.HeadingLevel.HEADING_3;
+
+        var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
+
+        // If this paragraph had footnote refs, add them
+        if (bp.hasFootnoteRefs && fnIdx < reformattedCitations.length) {
+          fnIdx++;
+          children.push(new D.FootnoteReferenceRun(fnIdx));
+        }
+
+        var pOpts = { children: children, spacing: { after: 200 } };
+        if (heading) pOpts.heading = heading;
+        docParagraphs.push(new D.Paragraph(pOpts));
+      });
+
+      // If no body paragraphs were extracted, just list the reformatted citations
+      if (docParagraphs.length === 0) {
+        docParagraphs.push(new D.Paragraph({
+          children: [new D.TextRun({ text: 'Reformatted Citations (' + selectedJournal + ')', bold: true, font: 'Times New Roman', size: 28 })],
+          heading: D.HeadingLevel.HEADING_1
+        }));
+        reformattedCitations.forEach(function (r, i) {
+          var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
+          runs.unshift(new D.TextRun({ text: (i + 1) + '. ', bold: true, font: 'Times New Roman', size: 24 }));
+          docParagraphs.push(new D.Paragraph({ children: runs, spacing: { after: 200 } }));
+        });
+      }
+
+      var doc = new D.Document({
+        footnotes: footnoteMap,
+        sections: [{
+          properties: {
+            page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } }
+          },
+          children: docParagraphs
+        }]
+      });
+
+      var blob = await D.Packer.toBlob(doc);
+      var baseName = (currentFile.name || 'paper').replace(/\.docx$/i, '');
+      saveAs(blob, baseName + '-reformatted-' + selectedJournal + '.docx');
+
+      showToast('Downloaded! Check your reformatted document.');
+
+    } catch (err) {
+      console.error('Export error:', err);
+      showToast('Export failed: ' + err.message, true);
+    }
+
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = 'Download Reformatted .docx';
+  });
+
+  // Parse simple HTML (with <em> tags) into docx TextRun array
+  function parseHtmlToRuns(html, D) {
+    if (!html) return [new D.TextRun({ text: '', font: 'Times New Roman', size: 20 })];
+
+    var runs = [];
+    // Split on <em>...</em> tags
+    var parts = html.split(/(<em>.*?<\/em>)/g);
+    parts.forEach(function (part) {
+      if (!part) return;
+      var emMatch = part.match(/^<em>(.*?)<\/em>$/);
+      if (emMatch) {
+        runs.push(new D.TextRun({ text: emMatch[1], italics: true, font: 'Times New Roman', size: 20 }));
+      } else {
+        // Strip any remaining HTML tags
+        var clean = part.replace(/<[^>]+>/g, '');
+        if (clean) {
+          runs.push(new D.TextRun({ text: clean, font: 'Times New Roman', size: 20 }));
+        }
+      }
     });
 
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    saveAs(blob, 'scholacite-reformatted.txt');
-    showToast('Reformatted citations exported!');
-  });
+    return runs.length ? runs : [new D.TextRun({ text: '', font: 'Times New Roman', size: 20 })];
+  }
 
   // ══════════════════════════════════════════════════════════
   //  TOAST
@@ -671,5 +797,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2500);
   }
 
-  console.log('ScholaCite v3.1 loaded');
+  console.log('ScholaCite v3.2 loaded');
 });
