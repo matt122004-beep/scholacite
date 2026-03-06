@@ -1,4 +1,4 @@
-// ScholaCite v3.5 — Citation Reformatter Engine (Bug Fixes)
+// ScholaCite v3.6 — Citation Reformatter Engine (Parser Hardening)
 // All processing is client-side. No data leaves the browser.
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -131,6 +131,91 @@ document.addEventListener('DOMContentLoaded', function () {
     if (c.pages) ref += ': ' + hyphenPages(c.pages);
     ref += ')';
     return ref;
+  }
+
+  // ── Parser Helpers for Multi-Source Footnotes ──
+  
+  // Split on top-level semicolons (not inside parentheses/brackets/quotes)
+  function splitTopLevelSemicolons(text) {
+    var segments = [];
+    var current = '';
+    var depth = { '(': 0, '[': 0, '"': 0, "'": 0, '"': 0, '"': 0 };
+    for (var i = 0; i < text.length; i++) {
+      var char = text[i];
+      if (char === '(') depth['(']++;
+      else if (char === ')') depth['('] = Math.max(0, depth['('] - 1);
+      else if (char === '[') depth['[']++;
+      else if (char === ']') depth['['] = Math.max(0, depth['['] - 1);
+      else if ((char === '"' || char === '"' || char === '"') && depth['"'] === 0) depth['"'] = 1 - depth['"'];
+      else if (char === "'" && depth["'"] === 0) depth["'"] = 1 - depth["'"];
+      
+      if (char === ';' && depth['('] === 0 && depth['['] === 0 && depth['"'] === 0 && depth["'"] === 0) {
+        segments.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    if (current.trim()) segments.push(current.trim());
+    return segments;
+  }
+  
+  // Remove leading discourse markers: cf., see, see also, contra, esp., e.g., i.e., etc.
+  function cleanSegmentPrefix(text) {
+    var trimmed = text.trim();
+    var prefixes = /^(cf\.|see\s+also|see|contra|esp\.|e\.g\.|i\.e\.|et\s+al\.)\s+/i;
+    return trimmed.replace(prefixes, '');
+  }
+  
+  // Parse a single footnote into multiple citation objects
+  function parseFootnoteCitations(footnoteText, footnoteIndex) {
+    var segments = splitTopLevelSemicolons(footnoteText);
+    var allCitations = [];
+    
+    segments.forEach(function (segment, segIdx) {
+      var cleaned = cleanSegmentPrefix(segment);
+      var parsed = parseCitation(cleaned);
+      
+      // Add source tracking
+      parsed.sourceFootnote = footnoteIndex;
+      parsed.segmentIndex = segIdx;
+      
+      // If unknown and has potential fallback, try to extract
+      if (parsed.type === 'unknown') {
+        var fallback = attemptFallbackExtraction(cleaned);
+        if (fallback) {
+          fallback.sourceFootnote = footnoteIndex;
+          fallback.segmentIndex = segIdx;
+          allCitations.push(fallback);
+        } else {
+          parsed.discursive = true;
+          parsed.needsReview = true;
+          allCitations.push(parsed);
+        }
+      } else {
+        allCitations.push(parsed);
+      }
+    });
+    
+    return allCitations;
+  }
+  
+  // Fallback: try to extract author, title, year/pages pattern from discursive text
+  function attemptFallbackExtraction(text) {
+    // Look for patterns like: "AuthorName, *Title*, pages" or "AuthorName, 'Title', pages"
+    var fallbackRegex = /^([A-Z][a-zA-Z\u00C0-\u024F'-]+),\s+(?:\*|["'""\u201c]|['\u2018\u2019])?(.+?)(?:\*|["'""\u201d]|['\u2019])?,?\s+(\d[\d\-\u2013\u2014,\s]*)/;
+    var m = text.match(fallbackRegex);
+    if (m) {
+      return {
+        type: 'fallback',
+        author: m[1].trim(),
+        title: m[2].trim(),
+        pages: (m[3] || '').trim(),
+        raw: text,
+        needsReview: true
+      };
+    }
+    return null;
   }
 
   const STYLES = {
@@ -730,6 +815,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
       let typeLabel = c.type.charAt(0).toUpperCase() + c.type.slice(1);
       let fieldsHtml = '';
+      
+      // Show which footnote this came from
+      var fnNote = c.sourceFootnote ? ' (from footnote ' + c.sourceFootnote + ')' : '';
+      if (c.segmentIndex > 0) fnNote += ' — citation ' + (c.segmentIndex + 1);
 
       if (c.type === 'journal') {
         fieldsHtml =
@@ -757,7 +846,7 @@ document.addEventListener('DOMContentLoaded', function () {
           field('Publisher', c.publisher) +
           field('Year', c.year) +
           field('Pages', c.pages);
-      } else if (c.type === 'subsequent') {
+      } else if (c.type === 'subsequent' || c.type === 'fallback') {
         typeLabel = 'Subsequent';
         fieldsHtml =
           field('Author', c.author) +
@@ -769,8 +858,14 @@ document.addEventListener('DOMContentLoaded', function () {
         fieldsHtml = '<div style="color:#7b2d8e;font-style:italic;">Ancient/primary source — passed through unchanged.</div>' +
           '<div style="margin-top:0.4rem;font-size:0.82rem;color:#546179;">' + escapeHtml(c.raw.substring(0, 200)) + (c.raw.length > 200 ? '…' : '') + '</div>';
       } else {
-        fieldsHtml = '<div style="color:#8a6d14;font-style:italic;">⚠️ Could not parse — manual review recommended.</div>' +
-          '<div style="margin-top:0.4rem;font-size:0.82rem;color:#546179;">' + escapeHtml(c.raw.substring(0, 200)) + (c.raw.length > 200 ? '…' : '') + '</div>';
+        if (c.discursive) {
+          typeLabel = 'Discursive';
+          fieldsHtml = '<div style="color:#d65e11;font-style:italic;">📝 Commentary/discussion with mixed content — flagged for review.</div>' +
+            '<div style="margin-top:0.4rem;font-size:0.82rem;color:#546179;">' + escapeHtml(c.raw.substring(0, 200)) + (c.raw.length > 200 ? '…' : '') + '</div>';
+        } else {
+          fieldsHtml = '<div style="color:#8a6d14;font-style:italic;">⚠️ Could not parse — manual review recommended.</div>' +
+            '<div style="margin-top:0.4rem;font-size:0.82rem;color:#546179;">' + escapeHtml(c.raw.substring(0, 200)) + (c.raw.length > 200 ? '…' : '') + '</div>';
+        }
       }
 
       // Add translator/DOI if found
@@ -778,7 +873,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (c.urlDoi) fieldsHtml += field('DOI/URL', c.urlDoi);
 
       div.innerHTML =
-        '<span class="parsed-type ' + c.type + '">' + typeLabel + '</span>' +
+        '<span class="parsed-type ' + c.type + '" style="margin-right:0.5rem;">' + typeLabel + '</span><span style="font-size:0.85rem;color:#546179;">' + fnNote + '</span>' +
         '<div class="parsed-fields">' + fieldsHtml + '</div>';
       parsedList.appendChild(div);
     });
@@ -825,8 +920,10 @@ document.addEventListener('DOMContentLoaded', function () {
       var leftLabel = 'Original footnote';
       var rightLabel = style.system === 'author-date' ? 'In-text reference' : 'Reformatted';
 
+      var fnNum = r.sourceFootnote !== undefined ? r.sourceFootnote : (i + 1);
+      var segLabel = (r.segmentIndex > 0) ? ' — citation ' + (r.segmentIndex + 1) : '';
       div.innerHTML =
-        '<div class="reformat-num">Footnote ' + (i + 1) +
+        '<div class="reformat-num">Footnote ' + fnNum + segLabel +
         ' <span class="cite-type-badge ' + badgeClass + '">' + badgeLabel + '</span></div>' +
         '<div class="reformat-row">' +
           '<div class="reformat-col">' +
@@ -976,10 +1073,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      // Step 2: Parse citations
+      // Step 2: Parse citations (flattening multi-source footnotes)
       statusText.textContent = 'Detecting citation patterns…';
-      parsedCitations = footnotes.map(function (fn) {
-        return parseCitation(fn.text);
+      parsedCitations = [];
+      footnotes.forEach(function (fn, fnIdx) {
+        var citationsForFn = parseFootnoteCitations(fn.text, fnIdx + 1);
+        parsedCitations = parsedCitations.concat(citationsForFn);
       });
 
       // Step 3: Reformat
@@ -993,23 +1092,24 @@ document.addEventListener('DOMContentLoaded', function () {
       renderReformatted(reformattedCitations, selectedJournal);
 
       // Stats
-      var total = footnotes.length;
-      var detected = parsedCitations.filter(function (c) { return c.type !== 'unknown'; }).length;
+      var totalFootnotes = footnotes.length;
+      var totalCitations = parsedCitations.length;
+      var detected = parsedCitations.filter(function (c) { return c.type !== 'unknown' && !c.discursive; }).length;
       var primary = parsedCitations.filter(function (c) { return c.type === 'primary'; }).length;
-      var unknown = total - detected - primary;
+      var discursive = parsedCitations.filter(function (c) { return c.discursive; }).length;
       var withMissing = reformattedCitations.filter(function (r) { return r.missingFields && r.missingFields.length > 0; }).length;
 
-      footnoteCount.textContent = total + ' footnotes · ' + detected + ' reformatted';
+      footnoteCount.textContent = totalFootnotes + ' footnotes · ' + totalCitations + ' citations · ' + detected + ' parsed';
 
       // Show summary banner
-      if (unknown === 0 && withMissing === 0) {
+      if (discursive === 0 && withMissing === 0) {
         summaryBanner.className = 'summary-banner success';
         var sysNote = STYLES[selectedJournal].system === 'author-date' ? ' Converted to in-text author-date references.' : '';
-        summaryBanner.innerHTML = '<span class="summary-icon">✅</span> Reformatted ' + detected + '/' + total + ' citations for ' + selectedJournal + '.' + sysNote + (primary > 0 ? ' ' + primary + ' primary source(s) passed through.' : '');
+        summaryBanner.innerHTML = '<span class="summary-icon">✅</span> Parsed ' + totalCitations + ' citation(s) from ' + totalFootnotes + ' footnote(s). Reformatted for ' + selectedJournal + '.' + sysNote + (primary > 0 ? ' ' + primary + ' primary source(s) passed through.' : '');
       } else {
         var parts = [];
-        parts.push('Reformatted ' + detected + '/' + total + ' citations.');
-        if (unknown > 0) parts.push(unknown + ' need' + (unknown === 1 ? 's' : '') + ' manual review.');
+        parts.push('Parsed ' + totalCitations + ' citation(s) from ' + totalFootnotes + ' footnote(s).');
+        if (discursive > 0) parts.push(discursive + ' flagged as discursive/commentary.');
         if (withMissing > 0) parts.push(withMissing + ' ha' + (withMissing === 1 ? 's' : 've') + ' missing fields.');
         if (primary > 0) parts.push(primary + ' primary source(s) passed through.');
         summaryBanner.className = 'summary-banner warning';
