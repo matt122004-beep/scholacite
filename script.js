@@ -85,92 +85,156 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // ══════════════════════════════════════════════════════════
-  //  STYLE RULES
+  //  STYLE RULES — Verified from actual published articles
   // ══════════════════════════════════════════════════════════
+
+  // Page range formatter
+  function enDashPages(p) { return (p || '').replace(/\s*[-–—]\s*/g, '–'); } // JBL: en-dashes
+  function hyphenPages(p) { return (p || '').replace(/\s*[-–—]\s*/g, '-'); } // JSOT: hyphens
+
+  // Author initials for JSNT bibliography: "Dunn, J.D.G."
+  function authorInitials(author) {
+    if (!author) return '';
+    var parts = author.split(',');
+    if (parts.length >= 2) {
+      var last = parts[0].trim();
+      var firsts = parts.slice(1).join(',').trim();
+      // Convert first names to initials
+      var initials = firsts.split(/\s+/).map(function (w) {
+        if (w.match(/^[A-Z]\.?$/)) return w.replace(/\.?$/, '.');
+        return w.charAt(0).toUpperCase() + '.';
+      }).join('');
+      return last + ', ' + initials;
+    }
+    return author;
+  }
+
+  // JSNT author-date in-text reference: (Author Year: Pages)
+  function jsntInText(c) {
+    var auth = authorLastOnly(c.author);
+    var authors = splitAuthors(c.author);
+    if (authors.length === 2) {
+      auth = authorLastOnly(authors[0]) + ' and ' + authorLastOnly(authors[1]);
+    } else if (authors.length > 2) {
+      auth = authorLastOnly(authors[0]) + ' et al.';
+    }
+    var ref = '(' + auth + ' ' + (c.year || '');
+    if (c.pages) ref += ': ' + hyphenPages(c.pages);
+    ref += ')';
+    return ref;
+  }
+
   const STYLES = {
+    // ── JBL: American SBLHS Footnotes ──────────────────────
     JBL: {
       name: 'Journal of Biblical Literature',
       abbrev: 'JBL',
       base: 'SBLHS',
-      notes: 'SBL Handbook of Style, 2nd ed. Footnote citation format.',
-      abbreviateJournals: true,  // Use SBLHS abbreviations
+      system: 'footnotes',
+      notes: 'SBLHS 2nd ed. + CMS 17th. Footnotes only, no bibliography.',
+      abbreviateJournals: true,
+      quoteChar: '\u201c', // " (double curly)
+      quoteClose: '\u201d', // "
       rules: {
-        // First citation formats
         bookFirst: function (c) {
-          return authorFirstLast(c.author) + ', <em>' + c.title + '</em> (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+          var pg = c.pages ? ', ' + enDashPages(c.pages) : '';
+          var series = c.series ? ' ' + c.series : '';
+          return authorFirstLast(c.author) + ', <em>' + cleanTitle(c.title) + '</em>' + series + ' (' + (c.city||'') + ': ' + (c.publisher||'') + ', ' + c.year + ')' + pg + '.';
         },
         journalFirst: function (c, style) {
           var jName = style.abbreviateJournals ? abbreviateJournal(c.journal) : c.journal;
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
+          return authorFirstLast(c.author) + ', \u201c' + cleanTitle(c.title) + ',\u201d <em>' + jName + '</em> ' + c.volume + ' (' + c.year + '): ' + enDashPages(c.pages) + '.';
         },
         chapterFirst: function (c) {
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>' + (c.editor ? ', ed. ' + c.editor : '') + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+          return authorFirstLast(c.author) + ', \u201c' + cleanTitle(c.title) + ',\u201d in <em>' + cleanTitle(c.bookTitle||'') + '</em>' + (c.editor ? ', ed. ' + c.editor : '') + ' (' + (c.city||'') + ': ' + (c.publisher||'') + ', ' + c.year + ')' + (c.pages ? ', ' + enDashPages(c.pages) : '') + '.';
         },
-        // Subsequent citation formats (short form)
         bookSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + c.pages : '') + '.';
+          return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + enDashPages(c.pages) : '') + '.';
         },
         journalSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + '," ' + (c.pages ? c.pages + '.' : '.');
+          return authorLastOnly(c.author) + ', \u201c' + shortTitle(cleanTitle(c.title)) + ',\u201d ' + (c.pages ? enDashPages(c.pages) + '.' : '.');
         },
         chapterSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + ',"' + (c.pages ? ' ' + c.pages : '') + '.';
+          return authorLastOnly(c.author) + ', \u201c' + shortTitle(cleanTitle(c.title)) + ',\u201d' + (c.pages ? ' ' + enDashPages(c.pages) : '') + '.';
         }
       }
     },
+
+    // ── JSNT: British Harvard Author-Date ──────────────────
     JSNT: {
       name: 'Journal for the Study of the New Testament',
       abbrev: 'JSNT',
-      base: 'SBLHS',
-      notes: 'Follows SBLHS with SAGE house style. Full journal titles in bibliography.',
-      abbreviateJournals: false,  // JSNT uses full journal titles
+      base: 'Author-Date (Harvard)',
+      system: 'author-date',  // FUNDAMENTALLY DIFFERENT
+      notes: 'In-text (Author Year: Page). Bibliography at end. SAGE house style.',
+      abbreviateJournals: false,
+      quoteChar: '\u2018', // ' (single curly)
+      quoteClose: '\u2019', // '
       rules: {
-        bookFirst: function (c) {
-          return authorFirstLast(c.author) + ', <em>' + c.title + '</em> (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+        // In-text citation (replaces footnote)
+        inText: function (c) {
+          return jsntInText(c);
         },
-        journalFirst: function (c, style) {
-          var jName = style.abbreviateJournals ? abbreviateJournal(c.journal) : c.journal;
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
+        // Bibliography entries (hanging-date format)
+        bookBiblio: function (c) {
+          var auth = authorInitials(splitAuthors(c.author)[0]);
+          var series = c.series ? ' (' + c.series + '; ' + (c.city||'') + ': ' + (c.publisher||'') + ')' : ' (' + (c.city||'') + ': ' + (c.publisher||'') + ')';
+          return auth + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + c.year + '&nbsp;&nbsp;&nbsp;&nbsp;<em>' + cleanTitle(c.title) + '</em>' + series + '.';
         },
-        chapterFirst: function (c) {
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>' + (c.editor ? ', ed. ' + c.editor : '') + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+        journalBiblio: function (c) {
+          var auth = authorInitials(splitAuthors(c.author)[0]);
+          return auth + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + c.year + '&nbsp;&nbsp;&nbsp;&nbsp;\u2018' + cleanTitle(c.title) + '\u2019, <em>' + c.journal + '</em> ' + c.volume + (c.issue ? '.' + c.issue : '') + ': ' + hyphenPages(c.pages) + '.';
         },
-        bookSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + c.pages : '') + '.';
+        chapterBiblio: function (c) {
+          var auth = authorInitials(splitAuthors(c.author)[0]);
+          var edStr = c.editor ? c.editor + ' (ed.)' : '';
+          return auth + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + c.year + '&nbsp;&nbsp;&nbsp;&nbsp;\u2018' + cleanTitle(c.title) + '\u2019, in ' + edStr + ', <em>' + cleanTitle(c.bookTitle||'') + '</em> (' + (c.city||'') + ': ' + (c.publisher||'') + '): ' + hyphenPages(c.pages) + '.';
         },
-        journalSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + '," ' + (c.pages ? c.pages + '.' : '.');
-        },
-        chapterSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + ',"' + (c.pages ? ' ' + c.pages : '') + '.';
-        }
+        // Footnote format (for discursive notes only — not citations)
+        bookFirst: function (c) { return jsntInText(c); },
+        journalFirst: function (c) { return jsntInText(c); },
+        chapterFirst: function (c) { return jsntInText(c); },
+        bookSubsequent: function (c) { return jsntInText(c); },
+        journalSubsequent: function (c) { return jsntInText(c); },
+        chapterSubsequent: function (c) { return jsntInText(c); }
       }
     },
+
+    // ── JSOT: British Sheffield Footnotes ──────────────────
     JSOT: {
       name: 'Journal for the Study of the Old Testament',
       abbrev: 'JSOT',
-      base: 'SBLHS',
-      notes: 'Follows SBLHS with SAGE house style. Nearly identical to JSNT rules.',
-      abbreviateJournals: false,  // JSOT uses full journal titles
+      base: 'Sheffield Style',
+      system: 'footnotes',
+      notes: 'Footnotes, no bibliography. British conventions. SAGE house style.',
+      abbreviateJournals: false,
+      quoteChar: '\u2018', // ' (single curly)
+      quoteClose: '\u2019', // '
       rules: {
         bookFirst: function (c) {
-          return authorFirstLast(c.author) + ', <em>' + c.title + '</em> (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+          var series = c.series ? c.series + '; ' : '';
+          var pg = c.pages ? ', pp. ' + hyphenPages(c.pages) : '';
+          return authorFirstLast(c.author) + ', <em>' + cleanTitle(c.title) + '</em> (' + series + (c.city||'') + ': ' + (c.publisher||'') + ', ' + c.year + ')' + pg + '.';
         },
-        journalFirst: function (c, style) {
-          var jName = style.abbreviateJournals ? abbreviateJournal(c.journal) : c.journal;
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," <em>' + jName + '</em> ' + c.volume + (c.issue ? ', no. ' + c.issue : '') + ' (' + c.year + '): ' + c.pages + '.';
+        journalFirst: function (c) {
+          return authorFirstLast(c.author) + ', \u2018' + cleanTitle(c.title) + '\u2019, <em>' + c.journal + '</em> ' + c.volume + (c.issue ? '.' + c.issue : '') + ' (' + c.year + '): pp. ' + hyphenPages(c.pages) + '.';
         },
         chapterFirst: function (c) {
-          return authorFirstLast(c.author) + ', "' + cleanTitle(c.title) + '," in <em>' + c.bookTitle + '</em>' + (c.editor ? ', ed. ' + c.editor : '') + ' (' + c.city + ': ' + c.publisher + ', ' + c.year + ')' + (c.pages ? ', ' + c.pages : '') + '.';
+          var edStr = c.editor ? ' ' + c.editor + ' (ed.),' : '';
+          var series = c.series ? c.series + '; ' : '';
+          return authorFirstLast(c.author) + ', \u2018' + cleanTitle(c.title) + '\u2019, in' + edStr + ' <em>' + cleanTitle(c.bookTitle||'') + '</em> (' + series + (c.city||'') + ': ' + (c.publisher||'') + ', ' + c.year + ')' + (c.pages ? ', pp. ' + hyphenPages(c.pages) : '') + '.';
         },
         bookSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + (c.pages ? ', ' + c.pages : '') + '.';
+          var pg = c.pages ? ', p. ' + hyphenPages(c.pages) : '';
+          return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + pg + '.';
         },
         journalSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + '," ' + (c.pages ? c.pages + '.' : '.');
+          var pg = c.pages ? ', p. ' + hyphenPages(c.pages) : '';
+          return authorLastOnly(c.author) + ', \u2018' + shortTitle(cleanTitle(c.title)) + '\u2019' + pg + '.';
         },
         chapterSubsequent: function (c) {
-          return authorLastOnly(c.author) + ', "' + shortTitle(cleanTitle(c.title)) + ',"' + (c.pages ? ' ' + c.pages : '') + '.';
+          var pg = c.pages ? ', p. ' + hyphenPages(c.pages) : '';
+          return authorLastOnly(c.author) + ', \u2018' + shortTitle(cleanTitle(c.title)) + '\u2019' + pg + '.';
         }
       }
     }
@@ -307,12 +371,17 @@ document.addEventListener('DOMContentLoaded', function () {
   //  REFORMATTING ENGINE
   // ══════════════════════════════════════════════════════════
 
+  // Store bibliography entries for JSNT
+  var bibliographyEntries = [];
+
   function reformatCitations(parsed, styleName) {
     var style = STYLES[styleName];
     if (!style) return parsed.map(function (c) { return { original: c.raw, formatted: c.raw, type: c.type, isFirst: true }; });
 
     var rules = style.rules;
     var cited = {}; // track first vs subsequent by author+title key
+    bibliographyEntries = []; // reset
+    var biblioSeen = {}; // track unique entries for bibliography
 
     return parsed.map(function (c) {
       // Primary sources: pass through unchanged
@@ -331,28 +400,46 @@ document.addEventListener('DOMContentLoaded', function () {
       cited[citeKey] = true;
 
       var formattedHtml;
-      if (c.type === 'journal') {
-        formattedHtml = isFirst ? rules.journalFirst(c, style) : rules.journalSubsequent(c);
-      } else if (c.type === 'book') {
-        formattedHtml = isFirst ? rules.bookFirst(c) : rules.bookSubsequent(c);
-      } else if (c.type === 'chapter') {
-        formattedHtml = isFirst ? rules.chapterFirst(c) : rules.chapterSubsequent(c);
+
+      if (style.system === 'author-date') {
+        // JSNT: Generate in-text citation instead of footnote
+        formattedHtml = rules.inText(c);
+
+        // Generate bibliography entry (one per unique work)
+        if (!biblioSeen[citeKey]) {
+          biblioSeen[citeKey] = true;
+          var biblioHtml;
+          if (c.type === 'journal') biblioHtml = rules.journalBiblio(c);
+          else if (c.type === 'book') biblioHtml = rules.bookBiblio(c);
+          else if (c.type === 'chapter') biblioHtml = rules.chapterBiblio(c);
+          else biblioHtml = escapeHtml(c.raw);
+          bibliographyEntries.push({ html: biblioHtml, text: biblioHtml.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' '), sortKey: authorLastOnly(c.author) + c.year });
+        }
       } else {
-        formattedHtml = escapeHtml(c.raw);
+        // JBL / JSOT: footnote-based
+        if (c.type === 'journal') {
+          formattedHtml = isFirst ? rules.journalFirst(c, style) : rules.journalSubsequent(c);
+        } else if (c.type === 'book') {
+          formattedHtml = isFirst ? rules.bookFirst(c) : rules.bookSubsequent(c);
+        } else if (c.type === 'chapter') {
+          formattedHtml = isFirst ? rules.chapterFirst(c) : rules.chapterSubsequent(c);
+        } else {
+          formattedHtml = escapeHtml(c.raw);
+        }
       }
 
-      // Append translator if present
-      if (c.translator && isFirst) {
+      // Append translator if present (footnote systems only, first citation)
+      if (c.translator && isFirst && style.system !== 'author-date') {
         formattedHtml = formattedHtml.replace(/\.$/, ', trans. ' + escapeHtml(c.translator) + '.');
       }
 
-      // Append DOI/URL if present
-      if (c.urlDoi && isFirst) {
+      // Append DOI/URL if present (first citation only)
+      if (c.urlDoi && isFirst && style.system !== 'author-date') {
         formattedHtml = formattedHtml.replace(/\.$/, '. ' + escapeHtml(c.urlDoi) + '.');
       }
 
       // Plain text version (strip HTML tags)
-      var formatted = formattedHtml.replace(/<[^>]+>/g, '');
+      var formatted = formattedHtml.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
 
       // Check for missing fields
       var missingFields = getMissingFields(c);
@@ -611,7 +698,16 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderReformatted(results, styleName) {
     reformattedList.innerHTML = '';
     var style = STYLES[styleName];
-    reformatStyleLabel.textContent = 'Formatted for: ' + style.name + ' (' + style.base + ')';
+    var systemLabel = style.system === 'author-date' ? 'In-text author-date + bibliography' : 'Footnotes';
+    reformatStyleLabel.innerHTML = 'Formatted for: <strong>' + style.name + '</strong> (' + style.base + ') &middot; ' + systemLabel;
+
+    // For author-date (JSNT): show note about conversion
+    if (style.system === 'author-date') {
+      var note = document.createElement('div');
+      note.style.cssText = 'background:#e8f0fe;border:1px solid #b3d4fc;border-radius:6px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.85rem;color:#1a56db;';
+      note.innerHTML = '📋 <strong>Note:</strong> JSNT uses in-text author-date citations, not footnotes. Each footnote citation has been converted to an in-text reference. A bibliography/reference list is shown below.';
+      reformattedList.appendChild(note);
+    }
 
     results.forEach(function (r, i) {
       var div = document.createElement('div');
@@ -621,32 +717,35 @@ document.addEventListener('DOMContentLoaded', function () {
       var badgeClass, badgeLabel;
       if (r.type === 'unknown') { badgeClass = 'unknown'; badgeLabel = 'Manual review'; }
       else if (r.type === 'primary') { badgeClass = 'primary'; badgeLabel = 'Primary source'; }
+      else if (style.system === 'author-date' && r.type !== 'unknown' && r.type !== 'primary') { badgeClass = 'first'; badgeLabel = 'In-text'; }
       else if (r.isFirst) { badgeClass = 'first'; badgeLabel = 'First citation'; }
       else { badgeClass = 'subsequent'; badgeLabel = 'Subsequent'; }
 
       var warningHtml = '';
       if (r.type === 'unknown') {
-        warningHtml = '<div class="review-warning"><span class="warn-icon">⚠️</span> Could not parse this citation — manual review recommended</div>';
+        warningHtml = '<div class="review-warning"><span class="warn-icon">⚠️</span> Could not parse — manual review recommended</div>';
       } else if (r.missingFields && r.missingFields.length > 0) {
         warningHtml = '<div class="missing-fields">Missing: ' + r.missingFields.join(', ') + '</div>';
       }
 
-      // Highlight differences in reformatted text
       var formattedDisplayHtml = r.formattedHtml;
       if (r.type !== 'unknown' && r.type !== 'primary' && r.original !== r.formatted) {
         formattedDisplayHtml = highlightChanges(r.original, r.formattedHtml);
       }
+
+      var leftLabel = 'Original footnote';
+      var rightLabel = style.system === 'author-date' ? 'In-text reference' : 'Reformatted';
 
       div.innerHTML =
         '<div class="reformat-num">Footnote ' + (i + 1) +
         ' <span class="cite-type-badge ' + badgeClass + '">' + badgeLabel + '</span></div>' +
         '<div class="reformat-row">' +
           '<div class="reformat-col">' +
-            '<div class="reformat-col-label original">Original</div>' +
+            '<div class="reformat-col-label original">' + leftLabel + '</div>' +
             '<div class="original-text">' + escapeHtml(r.original) + '</div>' +
           '</div>' +
           '<div class="reformat-col">' +
-            '<div class="reformat-col-label formatted">Reformatted</div>' +
+            '<div class="reformat-col-label formatted">' + rightLabel + '</div>' +
             '<div class="formatted-text">' + formattedDisplayHtml + '</div>' +
             warningHtml +
           '</div>' +
@@ -654,6 +753,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
       reformattedList.appendChild(div);
     });
+
+    // For author-date (JSNT): render bibliography section
+    if (style.system === 'author-date' && bibliographyEntries.length > 0) {
+      // Sort bibliography alphabetically by author last name
+      var sorted = bibliographyEntries.slice().sort(function (a, b) {
+        return a.sortKey.localeCompare(b.sortKey);
+      });
+
+      var biblioDiv = document.createElement('div');
+      biblioDiv.style.cssText = 'margin-top:2rem;padding-top:1.5rem;border-top:2px solid #1a2744;';
+      biblioDiv.innerHTML = '<h3 style="font-family:Playfair Display,serif;font-size:1.15rem;margin-bottom:1rem;color:#1a2744;">Reference List / Bibliography</h3>';
+
+      sorted.forEach(function (entry) {
+        var item = document.createElement('div');
+        item.style.cssText = 'margin-bottom:0.75rem;font-size:0.88rem;line-height:1.6;color:#1a2744;padding-left:2rem;text-indent:-2rem;';
+        item.innerHTML = entry.html;
+        biblioDiv.appendChild(item);
+      });
+
+      reformattedList.appendChild(biblioDiv);
+    }
   }
 
   // Simple diff highlighting — wrap parts of formatted that differ from original
@@ -795,7 +915,8 @@ document.addEventListener('DOMContentLoaded', function () {
       // Show summary banner
       if (unknown === 0 && withMissing === 0) {
         summaryBanner.className = 'summary-banner success';
-        summaryBanner.innerHTML = '<span class="summary-icon">✅</span> Reformatted ' + detected + '/' + total + ' citations successfully.' + (primary > 0 ? ' ' + primary + ' primary source(s) passed through.' : '');
+        var sysNote = STYLES[selectedJournal].system === 'author-date' ? ' Converted to in-text author-date references.' : '';
+        summaryBanner.innerHTML = '<span class="summary-icon">✅</span> Reformatted ' + detected + '/' + total + ' citations for ' + selectedJournal + '.' + sysNote + (primary > 0 ? ' ' + primary + ' primary source(s) passed through.' : '');
       } else {
         var parts = [];
         parts.push('Reformatted ' + detected + '/' + total + ' citations.');
@@ -856,47 +977,72 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const selectedJournal = document.querySelector('input[name="journal"]:checked').value;
+    var style = STYLES[selectedJournal];
 
-    // Show processing state
     downloadBtn.disabled = true;
     downloadBtn.textContent = 'Generating .docx…';
 
     try {
-      const D = docx; // docx.js UMD global
-
-      // Build footnote definitions
-      var footnoteMap = {};
-      reformattedCitations.forEach(function (r, i) {
-        var fnId = i + 1;
-        // Parse the formatted HTML into text runs (handle <em> for italics)
-        var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
-        footnoteMap[fnId] = { children: [new D.Paragraph({ children: runs })] };
-      });
-
-      // Build body paragraphs with footnote references
+      const D = docx;
       var docParagraphs = [];
       var fnIdx = 0;
 
-      extractedBodyParagraphs.forEach(function (bp) {
-        var heading = null;
-        if (bp.tag === 'h1') heading = D.HeadingLevel.HEADING_1;
-        else if (bp.tag === 'h2') heading = D.HeadingLevel.HEADING_2;
-        else if (bp.tag === 'h3') heading = D.HeadingLevel.HEADING_3;
+      if (style.system === 'author-date') {
+        // ── JSNT: In-text citations + bibliography at end ──
+        extractedBodyParagraphs.forEach(function (bp) {
+          var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
 
-        var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
+          if (bp.hasFootnoteRefs && fnIdx < reformattedCitations.length) {
+            var r = reformattedCitations[fnIdx];
+            fnIdx++;
+            // Append in-text citation after the text
+            children.push(new D.TextRun({ text: ' ' + r.formatted, font: 'Times New Roman', size: 24 }));
+          }
 
-        // If this paragraph had footnote refs, add them
-        if (bp.hasFootnoteRefs && fnIdx < reformattedCitations.length) {
-          fnIdx++;
-          children.push(new D.FootnoteReferenceRun(fnIdx));
-        }
+          var pOpts = { children: children, spacing: { after: 200 } };
+          if (bp.tag === 'h1') pOpts.heading = D.HeadingLevel.HEADING_1;
+          else if (bp.tag === 'h2') pOpts.heading = D.HeadingLevel.HEADING_2;
+          docParagraphs.push(new D.Paragraph(pOpts));
+        });
 
-        var pOpts = { children: children, spacing: { after: 200 } };
-        if (heading) pOpts.heading = heading;
-        docParagraphs.push(new D.Paragraph(pOpts));
-      });
+        // Add bibliography section
+        docParagraphs.push(new D.Paragraph({ children: [], spacing: { before: 600 } }));
+        docParagraphs.push(new D.Paragraph({
+          children: [new D.TextRun({ text: 'Reference List', bold: true, font: 'Times New Roman', size: 28 })],
+          heading: D.HeadingLevel.HEADING_1
+        }));
 
-      // If no body paragraphs were extracted, just list the reformatted citations
+        var sorted = bibliographyEntries.slice().sort(function (a, b) { return a.sortKey.localeCompare(b.sortKey); });
+        sorted.forEach(function (entry) {
+          var runs = parseHtmlToRuns(entry.html, D);
+          docParagraphs.push(new D.Paragraph({ children: runs, spacing: { after: 200 }, indent: { hanging: 720 } }));
+        });
+
+      } else {
+        // ── JBL / JSOT: Footnotes ──
+        var footnoteMap = {};
+        reformattedCitations.forEach(function (r, i) {
+          var fnId = i + 1;
+          var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
+          footnoteMap[fnId] = { children: [new D.Paragraph({ children: runs })] };
+        });
+
+        extractedBodyParagraphs.forEach(function (bp) {
+          var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
+
+          if (bp.hasFootnoteRefs && fnIdx < reformattedCitations.length) {
+            fnIdx++;
+            children.push(new D.FootnoteReferenceRun(fnIdx));
+          }
+
+          var pOpts = { children: children, spacing: { after: 200 } };
+          if (bp.tag === 'h1') pOpts.heading = D.HeadingLevel.HEADING_1;
+          else if (bp.tag === 'h2') pOpts.heading = D.HeadingLevel.HEADING_2;
+          docParagraphs.push(new D.Paragraph(pOpts));
+        });
+      }
+
+      // Fallback if no body paragraphs
       if (docParagraphs.length === 0) {
         docParagraphs.push(new D.Paragraph({
           children: [new D.TextRun({ text: 'Reformatted Citations (' + selectedJournal + ')', bold: true, font: 'Times New Roman', size: 28 })],
@@ -909,20 +1055,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       }
 
-      var doc = new D.Document({
-        footnotes: footnoteMap,
+      var docOpts = {
         sections: [{
-          properties: {
-            page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } }
-          },
+          properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
           children: docParagraphs
         }]
-      });
+      };
+      // Only add footnotes for footnote-based systems
+      if (style.system !== 'author-date') {
+        docOpts.footnotes = footnoteMap;
+      }
 
+      var doc = new D.Document(docOpts);
       var blob = await D.Packer.toBlob(doc);
       var baseName = (currentFile.name || 'paper').replace(/\.docx$/i, '');
       saveAs(blob, baseName + '-reformatted-' + selectedJournal + '.docx');
-
       showToast('Downloaded! Check your reformatted document.');
 
     } catch (err) {

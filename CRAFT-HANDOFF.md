@@ -1,41 +1,53 @@
-# CRAFT-HANDOFF — scholacite-v3.2
+# CRAFT-HANDOFF — scholacite-v3.3
 
 ## Status
-✅ COMPLETE — committed and pushed
+✅ COMPLETE — final polish phase shipped
 
 ## What I built
 
-### Bug Fix: Chapter parser
-- **Problem:** Chapter-in-edited-volume citations misidentified as BOOK type
-- **Fix:** Added two chapter patterns (before generic book):
-  - `chapterStrict` — matches `"Title," in Book, ed. Editor (City: Publisher, Year)` (also `eds.`)
-  - `chapterLoose` — matches `"Title," in Book (City: Publisher, Year)` (no explicit editor)
-- **Also:** Made `chapterFirst()` formatter handle missing editor gracefully
-- **Tested:** Chapter citation correctly typed as CHAPTER, not BOOK ✅
+### 1. Landing content
+- Hero tagline: "Upload your paper. Choose your journal. Get perfectly formatted citations."
+- 3-step how-it-works visual: Upload → Select → Download (numbered cards with arrows)
+- Supported journal badges: JBL, JSNT, JSOT, SBLHS 2nd ed.
 
-### .docx Export
-- **Problem:** Download button only exported plain text
-- **Fix:** Full .docx generation using docx.js v8.5.0:
-  - Preserves original body paragraphs and headings
-  - Replaces footnotes with reformatted citations in selected journal style
-  - Proper Word footnotes (FootnoteReferenceRun)
-  - Italic text runs for book/journal titles
-  - Filename: `{original}-reformatted-{journal}.docx`
-- **docx.js UMD loading issue:** The library's UMD wrapper doesn't bind to `window.docx` in all browser contexts (strict mode `this` is `undefined`). Fixed by patching the UMD header to force `window.docx = {}` binding. Local file `docx-patched.js` (742KB).
-- **Processing state:** Button shows "Generating .docx…" during export
-- **Success toast:** "Downloaded! Check your reformatted document."
-- **Error handling:** Toast with error message on failure
+### 2. Side-by-side comparison
+- Reformatted tab is now the default view after processing
+- Two-column grid: Original (left, gray) | Reformatted (right, with italics/formatting)
+- Changed text wrapped in subtle green highlight background
+- Each item shows citation type badge (First/Subsequent/Primary/Manual review)
 
-### Validation
-- .docx blob generation: produces valid 7KB+ .docx with proper MIME type ✅
-- All 4 footnotes parsed correctly (Journal, Book, Chapter, Journal-subsequent) ✅
-- No console errors from our code ✅
+### 3. Edge case handling
+- **Primary sources:** Detect Josephus, Philo, DSS refs, biblical references — pass through unchanged with purple "Primary source" badge
+- **Multi-author:** `splitAuthors()` handles "Author1 and Author2" patterns, formats all authors
+- **Translator:** Extracts "trans. Name" and appends to first citation
+- **URL/DOI:** Extracts and preserves in formatted output
+- **Missing fields:** `getMissingFields()` checks required fields per type, shows red "Missing: X, Y" warning
+
+### 4. Error reporting
+- **Summary banner** above results:
+  - Green: "✅ Reformatted 5/6 citations successfully. 1 primary source(s) passed through."
+  - Yellow: "⚠️ Reformatted X/Y. Z needs manual review."
+- **Unparseable citations:** Dashed yellow border, ⚠️ icon, "Could not parse — manual review recommended"
+- Footnote count badge: "6 footnotes · 5 reformatted"
+
+### 5. UX improvements
+- **Reset button:** "↺ Start Over" — clears all state, scrolls to upload
+- **Drag-drop feedback:** Border highlight + shadow glow when dragging over dropzone
+- **Keyboard accessible:** Dropzone has tabindex + Enter/Space triggers browse, tabs focusable
+- **Journal preference:** Saved to localStorage, restored on page load
+- **Smooth scroll** to results after reformatting
+
+## Testing (6-footnote test doc)
+1. Journal article (first) → JBL abbreviated ✅
+2. Book (first) → italicized title ✅
+3. Chapter in edited volume (first) → "in" + editor ✅
+4. Journal article (subsequent) → short form ✅
+5. Primary source (Josephus) → passed through unchanged ✅
+6. Unparseable → warning shown ✅
+- Summary banner correct ✅
+- Reset button works ✅
+- No console errors ✅
 
 ## Git
-- Commit: `bfaa088`
+- Commit: `297322d`
 - Pushed to: `origin/main`
-
-## Notes for Arch/Critic
-- `docx-patched.js` is 742KB — consider CDN in future if GitHub Pages size is a concern
-- The .docx export preserves basic text but complex formatting (tables, images, styles) from the original document is not preserved — mammoth.js extracts text/structure only
-- Phase 3.3 could add: side-by-side diff highlighting, more citation pattern coverage, bibliography generation
