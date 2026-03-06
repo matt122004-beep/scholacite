@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ScholaCite v3 — Academic Citation Reformatter</title>
-    <meta name="description" content="Upload a .docx academic paper, select a target journal style, and get reformatted citations. Supports JBL, JSNT, JSOT.">
+    <title>ScholaCite — Academic Citation Reformatter</title>
+    <meta name="description" content="Upload a .docx academic paper, select a target journal style, and get perfectly formatted citations. Supports JBL, JSNT, JSOT.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -20,12 +20,45 @@
 
     <main class="container">
 
+        <!-- Hero -->
+        <section class="hero">
+            <p class="hero-tagline">Upload your paper. Choose your journal. Get perfectly formatted citations.</p>
+            <div class="how-it-works">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-icon">📄</div>
+                    <div class="step-label">Upload</div>
+                    <div class="step-desc">Drop your .docx file</div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-icon">📋</div>
+                    <div class="step-label">Select</div>
+                    <div class="step-desc">Choose target journal</div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-icon">✅</div>
+                    <div class="step-label">Download</div>
+                    <div class="step-desc">Get reformatted .docx</div>
+                </div>
+            </div>
+            <div class="supported-badges">
+                <span class="badge">JBL</span>
+                <span class="badge">JSNT</span>
+                <span class="badge">JSOT</span>
+                <span class="badge outline">SBLHS 2nd ed.</span>
+            </div>
+        </section>
+
         <!-- Upload Section -->
-        <section class="upload-section">
+        <section class="upload-section" id="upload-section">
             <h2>Upload Your Paper</h2>
             <p class="section-desc">Drop a <code>.docx</code> file below to extract and reformat its citations.</p>
 
-            <div class="dropzone" id="dropzone">
+            <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload .docx file">
                 <div class="dropzone-content">
                     <div class="dropzone-icon">📄</div>
                     <p class="dropzone-label">Drag &amp; drop your <strong>.docx</strong> file here</p>
@@ -39,21 +72,22 @@
             <div class="file-info hidden" id="file-info">
                 <span class="file-icon">📎</span>
                 <span class="file-name" id="file-name"></span>
-                <button class="btn-icon" id="clear-file" title="Remove file">&times;</button>
+                <button class="btn-icon" id="clear-file" title="Remove file" aria-label="Remove file">&times;</button>
             </div>
         </section>
 
         <!-- Journal Selector -->
         <section class="journal-section" id="journal-section">
             <h2>Target Journal Style</h2>
-            <p class="section-desc">All journals below follow <em>SBL Handbook of Style</em> (2nd ed.) as their base.</p>
+            <p class="section-desc">All journals follow <em>SBL Handbook of Style</em> (2nd ed.) as their base.</p>
 
-            <div class="journal-options">
+            <div class="journal-options" role="radiogroup" aria-label="Select journal style">
                 <label class="journal-card">
                     <input type="radio" name="journal" value="JBL" checked>
                     <div class="journal-card-inner">
                         <strong>JBL</strong>
                         <span>Journal of Biblical Literature</span>
+                        <span class="journal-note">Abbreviated journal titles</span>
                     </div>
                 </label>
                 <label class="journal-card">
@@ -61,6 +95,7 @@
                     <div class="journal-card-inner">
                         <strong>JSNT</strong>
                         <span>Journal for the Study of the New Testament</span>
+                        <span class="journal-note">Full journal titles · SAGE</span>
                     </div>
                 </label>
                 <label class="journal-card">
@@ -68,6 +103,7 @@
                     <div class="journal-card-inner">
                         <strong>JSOT</strong>
                         <span>Journal for the Study of the Old Testament</span>
+                        <span class="journal-note">Full journal titles · SAGE</span>
                     </div>
                 </label>
             </div>
@@ -78,6 +114,9 @@
             <button class="btn primary reformat-btn" id="reformat-btn" disabled>
                 Reformat Citations
             </button>
+            <button class="btn tertiary reset-btn hidden" id="reset-btn">
+                ↺ Start Over
+            </button>
         </section>
 
         <!-- Status -->
@@ -86,30 +125,33 @@
             <span class="status-text" id="status-text">Processing…</span>
         </div>
 
+        <!-- Summary Banner -->
+        <div class="summary-banner hidden" id="summary-banner"></div>
+
         <!-- Preview / Results -->
         <section class="results-section hidden" id="results-section">
             <div class="results-header">
-                <h2>Extracted Footnotes</h2>
+                <h2>Results</h2>
                 <span class="footnote-count" id="footnote-count"></span>
             </div>
 
-            <div class="results-tabs">
-                <button class="tab active" data-tab="footnotes">Footnotes</button>
-                <button class="tab" data-tab="parsed">Parsed Citations</button>
-                <button class="tab" data-tab="reformatted">Reformatted</button>
+            <div class="results-tabs" role="tablist">
+                <button class="tab" data-tab="reformatted" role="tab" aria-selected="false">Reformatted</button>
+                <button class="tab" data-tab="footnotes" role="tab" aria-selected="false">Footnotes</button>
+                <button class="tab" data-tab="parsed" role="tab" aria-selected="false">Parsed</button>
             </div>
 
-            <div class="tab-panel active" id="panel-footnotes">
+            <div class="tab-panel" id="panel-reformatted" role="tabpanel">
+                <div class="reformat-style-label" id="reformat-style-label"></div>
+                <div id="reformatted-list" class="reformatted-list"></div>
+            </div>
+
+            <div class="tab-panel" id="panel-footnotes" role="tabpanel">
                 <div id="footnotes-list" class="footnotes-list"></div>
             </div>
 
-            <div class="tab-panel" id="panel-parsed">
+            <div class="tab-panel" id="panel-parsed" role="tabpanel">
                 <div id="parsed-list" class="parsed-list"></div>
-            </div>
-
-            <div class="tab-panel" id="panel-reformatted">
-                <div class="reformat-style-label" id="reformat-style-label"></div>
-                <div id="reformatted-list" class="reformatted-list"></div>
             </div>
 
             <div class="results-actions">
@@ -121,7 +163,7 @@
 
     <footer>
         <div class="container">
-            <p>ScholaCite v3.2 · Client-side only · No data leaves your browser</p>
+            <p>ScholaCite v3.3 · Client-side only · No data leaves your browser</p>
         </div>
     </footer>
 

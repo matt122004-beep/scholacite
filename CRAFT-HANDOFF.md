@@ -1,59 +1,41 @@
-# CRAFT-HANDOFF — scholacite-v3.0
+# CRAFT-HANDOFF — scholacite-v3.2
 
 ## Status
 ✅ COMPLETE — committed and pushed
 
 ## What I built
-Complete rewrite of ScholaCite from a simple text formatter to a .docx-based citation reformatter foundation.
 
-### New UI (index.html)
-- Drag-and-drop .docx upload zone (also click-to-browse)
-- File info bar with name/size and clear button
-- Journal selector: JBL, JSNT, JSOT (radio card layout)
-- "Reformat Citations" button (disabled until file uploaded)
-- Status/progress indicator with spinner
-- Tabbed results: Footnotes tab + Parsed Citations tab
-- Download button (stub for Phase 2)
-- Footer with "client-side only" privacy notice
+### Bug Fix: Chapter parser
+- **Problem:** Chapter-in-edited-volume citations misidentified as BOOK type
+- **Fix:** Added two chapter patterns (before generic book):
+  - `chapterStrict` — matches `"Title," in Book, ed. Editor (City: Publisher, Year)` (also `eds.`)
+  - `chapterLoose` — matches `"Title," in Book (City: Publisher, Year)` (no explicit editor)
+- **Also:** Made `chapterFirst()` formatter handle missing editor gracefully
+- **Tested:** Chapter citation correctly typed as CHAPTER, not BOOK ✅
 
-### Libraries (CDN)
-- mammoth.js 1.8.0 — .docx → HTML conversion with footnote extraction
-- docx.js 9.5.0 — .docx generation (ready for Phase 2)
-- FileSaver.js 2.0.5 — client-side file download
+### .docx Export
+- **Problem:** Download button only exported plain text
+- **Fix:** Full .docx generation using docx.js v8.5.0:
+  - Preserves original body paragraphs and headings
+  - Replaces footnotes with reformatted citations in selected journal style
+  - Proper Word footnotes (FootnoteReferenceRun)
+  - Italic text runs for book/journal titles
+  - Filename: `{original}-reformatted-{journal}.docx`
+- **docx.js UMD loading issue:** The library's UMD wrapper doesn't bind to `window.docx` in all browser contexts (strict mode `this` is `undefined`). Fixed by patching the UMD header to force `window.docx = {}` binding. Local file `docx-patched.js` (742KB).
+- **Processing state:** Button shows "Generating .docx…" during export
+- **Success toast:** "Downloaded! Check your reformatted document."
+- **Error handling:** Toast with error message on failure
 
-### Citation Parser (script.js)
-Three regex patterns for common academic citation formats:
-- **Journal:** `Author, "Title," Journal Volume, no. Issue (Year): Pages.`
-- **Book:** `Author, Title (City: Publisher, Year), Pages.`
-- **Chapter:** `Author, "Chapter," in Book, ed. Editor (City: Publisher, Year), Pages.`
-
-Each footnote is parsed → structured data extracted → displayed in Parsed Citations tab with type label (Journal/Book/Chapter/Unknown).
-
-### Style Rules (stubs)
-```js
-STYLES = { JBL: {...}, JSNT: {...}, JSOT: {...} }
-```
-All reference SBLHS 2nd ed. as base. Rules objects are empty — Phase 2 will fill them.
-
-### Design
-- Kept Playfair Display + Inter fonts
-- Navy (#1a2744) + gold (#b8860b) scheme
-- Clean card-based layout
-- Responsive down to 640px
-
-## Testing
-- Created test .docx with 3 footnotes (journal, book, chapter in edited volume)
-- All 3 footnotes extracted correctly by mammoth.js ✅
-- All 3 citation patterns detected and parsed ✅
-- No console errors ✅
-- Tab switching works ✅
-- File clear works ✅
+### Validation
+- .docx blob generation: produces valid 7KB+ .docx with proper MIME type ✅
+- All 4 footnotes parsed correctly (Journal, Book, Chapter, Journal-subsequent) ✅
+- No console errors from our code ✅
 
 ## Git
-- Commit: `85441eb`
+- Commit: `bfaa088`
 - Pushed to: `origin/main`
 
-## Phase 2 roadmap
-- v3.1: Implement actual SBLHS formatting rules for JBL/JSNT/JSOT
-- v3.2: Generate reformatted .docx output with docx.js
-- v3.3: Side-by-side before/after preview, edge case handling
+## Notes for Arch/Critic
+- `docx-patched.js` is 742KB — consider CDN in future if GitHub Pages size is a concern
+- The .docx export preserves basic text but complex formatting (tables, images, styles) from the original document is not preserved — mammoth.js extracts text/structure only
+- Phase 3.3 could add: side-by-side diff highlighting, more citation pattern coverage, bibliography generation

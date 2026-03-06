@@ -1,4 +1,4 @@
-// ScholaCite v3.0 — Citation Reformatter Engine
+// ScholaCite v3.3 — Citation Reformatter Engine (Final Polish)
 // All processing is client-side. No data leaves the browser.
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -9,14 +9,18 @@ document.addEventListener('DOMContentLoaded', function () {
   const fileName = document.getElementById('file-name');
   const clearFileBtn = document.getElementById('clear-file');
   const reformatBtn = document.getElementById('reformat-btn');
+  const resetBtn = document.getElementById('reset-btn');
   const statusBar = document.getElementById('status-bar');
   const statusText = document.getElementById('status-text');
+  const summaryBanner = document.getElementById('summary-banner');
   const resultsSection = document.getElementById('results-section');
   const footnoteCount = document.getElementById('footnote-count');
   const footnotesList = document.getElementById('footnotes-list');
   const parsedList = document.getElementById('parsed-list');
   const downloadBtn = document.getElementById('download-btn');
   const tabs = document.querySelectorAll('.tab');
+  const reformattedList = document.getElementById('reformatted-list');
+  const reformatStyleLabel = document.getElementById('reformat-style-label');
 
   // ── State ──
   let currentFile = null;
@@ -25,9 +29,26 @@ document.addEventListener('DOMContentLoaded', function () {
   let parsedCitations = [];
   let reformattedCitations = [];
 
-  // ── Additional DOM refs for v3.1 ──
-  const reformattedList = document.getElementById('reformatted-list');
-  const reformatStyleLabel = document.getElementById('reformat-style-label');
+  // ── Restore last journal selection from localStorage ──
+  var savedJournal = localStorage.getItem('scholacite-journal');
+  if (savedJournal) {
+    var radio = document.querySelector('input[name="journal"][value="' + savedJournal + '"]');
+    if (radio) radio.checked = true;
+  }
+  // Save journal selection on change
+  document.querySelectorAll('input[name="journal"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      localStorage.setItem('scholacite-journal', r.value);
+    });
+  });
+
+  // ── Keyboard: Enter on dropzone triggers file browse ──
+  dropzone.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fileInput.click();
+    }
+  });
 
   // ══════════════════════════════════════════════════════════
   //  JOURNAL ABBREVIATIONS (SBLHS §8 subset)
@@ -164,24 +185,89 @@ document.addEventListener('DOMContentLoaded', function () {
     return (t || '').replace(/[,.\s]+$/, '').trim();
   }
 
+  // Handle multi-author: "Last1, First1, Last2, First2, and Last3, First3"
+  // Also handles: "Last1, First1 and Last2, First2"
+  function splitAuthors(author) {
+    if (!author) return [];
+    // Split on " and " or " & "
+    return author.split(/\s+(?:and|&)\s+/i).map(function (a) { return a.trim(); });
+  }
+
   // "Last, First M." → "First M. Last"
   function authorFirstLast(author) {
     if (!author) return '';
+    var authors = splitAuthors(author);
+    if (authors.length > 1) {
+      return authors.map(function (a) { return singleAuthorFirstLast(a); }).join(authors.length > 2 ? ', ' : ' and ');
+    }
+    return singleAuthorFirstLast(author);
+  }
+
+  function singleAuthorFirstLast(author) {
     var parts = author.split(',');
     if (parts.length >= 2) {
       return parts.slice(1).join(',').trim() + ' ' + parts[0].trim();
     }
-    return author; // already in First Last format
+    return author;
   }
 
   // "Last, First M." → "Last" or "First M. Last" → "Last"
   function authorLastOnly(author) {
     if (!author) return '';
-    var parts = author.split(',');
+    var authors = splitAuthors(author);
+    // For subsequent citations, use first author's last name only
+    var first = authors[0];
+    var parts = first.split(',');
     if (parts.length >= 2) return parts[0].trim();
-    // Try "First Last" format
-    var words = author.trim().split(/\s+/);
+    var words = first.trim().split(/\s+/);
     return words[words.length - 1];
+  }
+
+  // Detect if text looks like a primary/ancient source reference
+  function isPrimarySource(text) {
+    if (!text) return false;
+    var patterns = [
+      /^(Josephus|Philo|Eusebius|Tacitus|Pliny|Suetonius|Dio|Strabo|Plutarch|Origen|Augustine|Jerome|Irenaeus|Tertullian|Clement)/i,
+      /\b(Ant\.|B\.J\.|J\.W\.|Hist\.\s*eccl|Haer\.|Adv\.\s*Marc|Strom\.|Leg\.\s*All|QG|QE)\b/,
+      /\b(LXX|MT|4Q\d|1QS|1QM|CD|11Q\d|P\.Oxy|BGU)\b/,
+      /\b(Gen|Exod|Lev|Num|Deut|Josh|Judg|Ruth|1\s*Sam|2\s*Sam|1\s*Kgs|2\s*Kgs|Isa|Jer|Ezek|Dan|Hos|Joel|Amos|Obad|Jonah|Mic|Nah|Hab|Zeph|Hag|Zech|Mal|Ps|Prov|Job|Song|Eccl|Lam|Esth|Neh|1\s*Chr|2\s*Chr|Ezra|Matt|Mark|Luke|John|Acts|Rom|1\s*Cor|2\s*Cor|Gal|Eph|Phil|Col|1\s*Thess|2\s*Thess|1\s*Tim|2\s*Tim|Tit|Phlm|Heb|Jas|1\s*Pet|2\s*Pet|1\s*John|2\s*John|3\s*John|Jude|Rev)\s+\d+[.:]\d+/
+    ];
+    // Only match if it looks like a short reference (not a full citation)
+    if (text.length > 150) return false;
+    return patterns.some(function (p) { return p.test(text); });
+  }
+
+  // Extract translator if present: "trans. Name"
+  function extractTranslator(text) {
+    var m = text.match(/,?\s*trans(?:lated)?\.?\s+(?:by\s+)?([A-Z][a-zA-Z.\s'-]+?)(?:\s*[,(]|$)/);
+    return m ? m[1].trim() : '';
+  }
+
+  // Extract URL/DOI from text
+  function extractUrlDoi(text) {
+    var doi = text.match(/\b(https?:\/\/doi\.org\/\S+|10\.\d{4,}\/\S+)/i);
+    var url = text.match(/\b(https?:\/\/\S+)/i);
+    return doi ? doi[1].replace(/[.,;]+$/, '') : (url ? url[1].replace(/[.,;]+$/, '') : '');
+  }
+
+  // Check for missing required fields and return list
+  function getMissingFields(c) {
+    var missing = [];
+    if (c.type === 'unknown' || c.type === 'primary') return missing;
+    if (!c.author) missing.push('author');
+    if (c.type === 'journal') {
+      if (!c.title) missing.push('title');
+      if (!c.journal) missing.push('journal');
+      if (!c.year) missing.push('year');
+    } else if (c.type === 'book') {
+      if (!c.title) missing.push('title');
+      if (!c.year) missing.push('year');
+    } else if (c.type === 'chapter') {
+      if (!c.title) missing.push('chapter title');
+      if (!c.bookTitle) missing.push('book title');
+      if (!c.year) missing.push('year');
+    }
+    return missing;
   }
 
   // Shorten title to first ~4 significant words
@@ -229,8 +315,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var cited = {}; // track first vs subsequent by author+title key
 
     return parsed.map(function (c) {
+      // Primary sources: pass through unchanged
+      if (c.type === 'primary') {
+        return { original: c.raw, formatted: c.raw, formattedHtml: escapeHtml(c.raw), type: 'primary', isFirst: true, missingFields: [] };
+      }
+
+      // Unknown citations: flag for manual review
       if (c.type === 'unknown') {
-        return { original: c.raw, formatted: c.raw, formattedHtml: escapeHtml(c.raw), type: 'unknown', isFirst: true };
+        return { original: c.raw, formatted: c.raw, formattedHtml: escapeHtml(c.raw), type: 'unknown', isFirst: true, missingFields: [] };
       }
 
       // Build a citation key to track first vs subsequent
@@ -249,15 +341,29 @@ document.addEventListener('DOMContentLoaded', function () {
         formattedHtml = escapeHtml(c.raw);
       }
 
+      // Append translator if present
+      if (c.translator && isFirst) {
+        formattedHtml = formattedHtml.replace(/\.$/, ', trans. ' + escapeHtml(c.translator) + '.');
+      }
+
+      // Append DOI/URL if present
+      if (c.urlDoi && isFirst) {
+        formattedHtml = formattedHtml.replace(/\.$/, '. ' + escapeHtml(c.urlDoi) + '.');
+      }
+
       // Plain text version (strip HTML tags)
       var formatted = formattedHtml.replace(/<[^>]+>/g, '');
+
+      // Check for missing fields
+      var missingFields = getMissingFields(c);
 
       return {
         original: c.raw,
         formatted: formatted,
         formattedHtml: formattedHtml,
         type: c.type,
-        isFirst: isFirst
+        isFirst: isFirst,
+        missingFields: missingFields
       };
     });
   }
@@ -285,6 +391,15 @@ document.addEventListener('DOMContentLoaded', function () {
   function parseCitation(text) {
     const trimmed = text.trim();
 
+    // Check for primary/ancient source references first
+    if (isPrimarySource(trimmed)) {
+      return { type: 'primary', raw: trimmed };
+    }
+
+    // Extract translator and URL/DOI for enrichment
+    var translator = extractTranslator(trimmed);
+    var urlDoi = extractUrlDoi(trimmed);
+
     // Try chapter first (most specific — contains "in" + "ed./eds.")
     let m = trimmed.match(PATTERNS.chapterStrict);
     if (m) {
@@ -298,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
         publisher: m[6].trim(),
         year: m[7],
         pages: (m[8] || '').trim(),
-        raw: trimmed
+        translator: translator, urlDoi: urlDoi, raw: trimmed
       };
     }
 
@@ -315,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function () {
         publisher: m[5].trim(),
         year: m[6],
         pages: (m[7] || '').trim(),
-        raw: trimmed
+        translator: translator, urlDoi: urlDoi, raw: trimmed
       };
     }
 
@@ -331,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function () {
         issue: m[5] || '',
         year: m[6],
         pages: (m[7] || '').trim(),
-        raw: trimmed
+        translator: translator, urlDoi: urlDoi, raw: trimmed
       };
     }
 
@@ -346,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function () {
         publisher: m[4].trim(),
         year: m[5],
         pages: (m[6] || '').trim(),
-        raw: trimmed
+        translator: translator, urlDoi: urlDoi, raw: trimmed
       };
     }
 
@@ -473,10 +588,18 @@ document.addEventListener('DOMContentLoaded', function () {
           field('Publisher', c.publisher) +
           field('Year', c.year) +
           field('Pages', c.pages);
+      } else if (c.type === 'primary') {
+        typeLabel = 'Primary';
+        fieldsHtml = '<div style="color:#7b2d8e;font-style:italic;">Ancient/primary source — passed through unchanged.</div>' +
+          '<div style="margin-top:0.4rem;font-size:0.82rem;color:#546179;">' + escapeHtml(c.raw.substring(0, 200)) + (c.raw.length > 200 ? '…' : '') + '</div>';
       } else {
-        fieldsHtml = '<div style="color:#8a8a8a;font-style:italic;">Could not parse — will be kept as-is.</div>' +
+        fieldsHtml = '<div style="color:#8a6d14;font-style:italic;">⚠️ Could not parse — manual review recommended.</div>' +
           '<div style="margin-top:0.4rem;font-size:0.82rem;color:#546179;">' + escapeHtml(c.raw.substring(0, 200)) + (c.raw.length > 200 ? '…' : '') + '</div>';
       }
+
+      // Add translator/DOI if found
+      if (c.translator) fieldsHtml += field('Translator', c.translator);
+      if (c.urlDoi) fieldsHtml += field('DOI/URL', c.urlDoi);
 
       div.innerHTML =
         '<span class="parsed-type ' + c.type + '">' + typeLabel + '</span>' +
@@ -492,10 +615,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     results.forEach(function (r, i) {
       var div = document.createElement('div');
-      div.className = 'reformat-item';
+      var needsReview = r.type === 'unknown' || (r.missingFields && r.missingFields.length > 0);
+      div.className = 'reformat-item' + (needsReview ? ' needs-review' : '');
 
-      var badgeClass = r.type === 'unknown' ? 'unknown' : (r.isFirst ? 'first' : 'subsequent');
-      var badgeLabel = r.type === 'unknown' ? 'Unchanged' : (r.isFirst ? 'First citation' : 'Subsequent');
+      var badgeClass, badgeLabel;
+      if (r.type === 'unknown') { badgeClass = 'unknown'; badgeLabel = 'Manual review'; }
+      else if (r.type === 'primary') { badgeClass = 'primary'; badgeLabel = 'Primary source'; }
+      else if (r.isFirst) { badgeClass = 'first'; badgeLabel = 'First citation'; }
+      else { badgeClass = 'subsequent'; badgeLabel = 'Subsequent'; }
+
+      var warningHtml = '';
+      if (r.type === 'unknown') {
+        warningHtml = '<div class="review-warning"><span class="warn-icon">⚠️</span> Could not parse this citation — manual review recommended</div>';
+      } else if (r.missingFields && r.missingFields.length > 0) {
+        warningHtml = '<div class="missing-fields">Missing: ' + r.missingFields.join(', ') + '</div>';
+      }
+
+      // Highlight differences in reformatted text
+      var formattedDisplayHtml = r.formattedHtml;
+      if (r.type !== 'unknown' && r.type !== 'primary' && r.original !== r.formatted) {
+        formattedDisplayHtml = highlightChanges(r.original, r.formattedHtml);
+      }
 
       div.innerHTML =
         '<div class="reformat-num">Footnote ' + (i + 1) +
@@ -507,12 +647,24 @@ document.addEventListener('DOMContentLoaded', function () {
           '</div>' +
           '<div class="reformat-col">' +
             '<div class="reformat-col-label formatted">Reformatted</div>' +
-            '<div class="formatted-text">' + r.formattedHtml + '</div>' +
+            '<div class="formatted-text">' + formattedDisplayHtml + '</div>' +
+            warningHtml +
           '</div>' +
         '</div>';
 
       reformattedList.appendChild(div);
     });
+  }
+
+  // Simple diff highlighting — wrap parts of formatted that differ from original
+  function highlightChanges(original, formattedHtml) {
+    // Strip HTML from formatted for comparison
+    var formattedPlain = formattedHtml.replace(/<[^>]+>/g, '');
+    if (original === formattedPlain) return formattedHtml;
+    // If significantly different, wrap entire formatted text in highlight
+    // For subtle differences, we could do word-level diff but that's complex with HTML
+    // Simple approach: if texts differ, add a subtle background to the container
+    return '<span style="background:rgba(19,115,51,0.06);padding:0.15em 0.3em;border-radius:3px;display:inline;">' + formattedHtml + '</span>';
   }
 
   function field(label, value) {
@@ -554,12 +706,25 @@ document.addEventListener('DOMContentLoaded', function () {
     if (fileInput.files.length) handleFile(fileInput.files[0]);
   });
 
-  clearFileBtn.addEventListener('click', function () {
+  function resetAll() {
     currentFile = null;
+    extractedFootnotes = [];
+    extractedBodyParagraphs = [];
+    parsedCitations = [];
+    reformattedCitations = [];
     fileInfo.classList.add('hidden');
     reformatBtn.disabled = true;
+    downloadBtn.disabled = true;
     resultsSection.classList.add('hidden');
+    summaryBanner.classList.add('hidden');
+    resetBtn.classList.add('hidden');
     fileInput.value = '';
+  }
+
+  clearFileBtn.addEventListener('click', resetAll);
+  resetBtn.addEventListener('click', function () {
+    resetAll();
+    document.getElementById('upload-section').scrollIntoView({ behavior: 'smooth' });
   });
 
   function handleFile(file) {
@@ -618,15 +783,37 @@ document.addEventListener('DOMContentLoaded', function () {
       renderParsed(parsedCitations);
       renderReformatted(reformattedCitations, selectedJournal);
 
-      const detected = parsedCitations.filter(function (c) { return c.type !== 'unknown'; }).length;
-      footnoteCount.textContent = footnotes.length + ' footnotes · ' + detected + ' citations detected';
+      // Stats
+      var total = footnotes.length;
+      var detected = parsedCitations.filter(function (c) { return c.type !== 'unknown'; }).length;
+      var primary = parsedCitations.filter(function (c) { return c.type === 'primary'; }).length;
+      var unknown = total - detected - primary;
+      var withMissing = reformattedCitations.filter(function (r) { return r.missingFields && r.missingFields.length > 0; }).length;
+
+      footnoteCount.textContent = total + ' footnotes · ' + detected + ' reformatted';
+
+      // Show summary banner
+      if (unknown === 0 && withMissing === 0) {
+        summaryBanner.className = 'summary-banner success';
+        summaryBanner.innerHTML = '<span class="summary-icon">✅</span> Reformatted ' + detected + '/' + total + ' citations successfully.' + (primary > 0 ? ' ' + primary + ' primary source(s) passed through.' : '');
+      } else {
+        var parts = [];
+        parts.push('Reformatted ' + detected + '/' + total + ' citations.');
+        if (unknown > 0) parts.push(unknown + ' need' + (unknown === 1 ? 's' : '') + ' manual review.');
+        if (withMissing > 0) parts.push(withMissing + ' ha' + (withMissing === 1 ? 's' : 've') + ' missing fields.');
+        if (primary > 0) parts.push(primary + ' primary source(s) passed through.');
+        summaryBanner.className = 'summary-banner warning';
+        summaryBanner.innerHTML = '<span class="summary-icon">⚠️</span> ' + parts.join(' ');
+      }
+      summaryBanner.classList.remove('hidden');
 
       resultsSection.classList.remove('hidden');
       statusBar.classList.add('hidden');
       reformatBtn.disabled = false;
       downloadBtn.disabled = false;
+      resetBtn.classList.remove('hidden');
 
-      // Switch to reformatted tab
+      // Switch to reformatted tab (default view)
       tabs.forEach(function (t) { t.classList.remove('active'); });
       document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
       var reformatTab = document.querySelector('.tab[data-tab="reformatted"]');
@@ -797,5 +984,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2500);
   }
 
-  console.log('ScholaCite v3.2 loaded');
+  console.log('ScholaCite v3.3 loaded');
 });
