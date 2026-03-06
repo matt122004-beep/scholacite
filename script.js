@@ -1,4 +1,4 @@
-// ScholaCite v3.3 — Citation Reformatter Engine (Final Polish)
+// ScholaCite v3.5 — Citation Reformatter Engine (Bug Fixes)
 // All processing is client-side. No data leaves the browser.
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -91,6 +91,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // Page range formatter
   function enDashPages(p) { return (p || '').replace(/\s*[-–—]\s*/g, '–'); } // JBL: en-dashes
   function hyphenPages(p) { return (p || '').replace(/\s*[-–—]\s*/g, '-'); } // JSOT: hyphens
+
+  // p. for single pages, pp. for ranges (JSOT)
+  function pagePrefix(p) {
+    if (!p) return 'p.';
+    var cleaned = p.trim();
+    // If it contains a range separator (hyphen, en-dash, em-dash, comma) → plural
+    if (/[-–—,]/.test(cleaned)) return 'pp.';
+    return 'p.';
+  }
 
   // Author initials for JSNT bibliography: "Dunn, J.D.G."
   function authorInitials(author) {
@@ -213,27 +222,27 @@ document.addEventListener('DOMContentLoaded', function () {
       rules: {
         bookFirst: function (c) {
           var series = c.series ? c.series + '; ' : '';
-          var pg = c.pages ? ', pp. ' + hyphenPages(c.pages) : '';
+          var pg = c.pages ? ', ' + pagePrefix(c.pages) + ' ' + hyphenPages(c.pages) : '';
           return authorFirstLast(c.author) + ', <em>' + cleanTitle(c.title) + '</em> (' + series + (c.city||'') + ': ' + (c.publisher||'') + ', ' + c.year + ')' + pg + '.';
         },
         journalFirst: function (c) {
-          return authorFirstLast(c.author) + ', \u2018' + cleanTitle(c.title) + '\u2019, <em>' + c.journal + '</em> ' + c.volume + (c.issue ? '.' + c.issue : '') + ' (' + c.year + '): pp. ' + hyphenPages(c.pages) + '.';
+          return authorFirstLast(c.author) + ', \u2018' + cleanTitle(c.title) + '\u2019, <em>' + c.journal + '</em> ' + c.volume + (c.issue ? '.' + c.issue : '') + ' (' + c.year + '): ' + pagePrefix(c.pages) + ' ' + hyphenPages(c.pages) + '.';
         },
         chapterFirst: function (c) {
           var edStr = c.editor ? ' ' + c.editor + ' (ed.),' : '';
           var series = c.series ? c.series + '; ' : '';
-          return authorFirstLast(c.author) + ', \u2018' + cleanTitle(c.title) + '\u2019, in' + edStr + ' <em>' + cleanTitle(c.bookTitle||'') + '</em> (' + series + (c.city||'') + ': ' + (c.publisher||'') + ', ' + c.year + ')' + (c.pages ? ', pp. ' + hyphenPages(c.pages) : '') + '.';
+          return authorFirstLast(c.author) + ', \u2018' + cleanTitle(c.title) + '\u2019, in' + edStr + ' <em>' + cleanTitle(c.bookTitle||'') + '</em> (' + series + (c.city||'') + ': ' + (c.publisher||'') + ', ' + c.year + ')' + (c.pages ? ', ' + pagePrefix(c.pages) + ' ' + hyphenPages(c.pages) : '') + '.';
         },
         bookSubsequent: function (c) {
-          var pg = c.pages ? ', p. ' + hyphenPages(c.pages) : '';
+          var pg = c.pages ? ', ' + pagePrefix(c.pages) + ' ' + hyphenPages(c.pages) : '';
           return authorLastOnly(c.author) + ', <em>' + shortTitle(cleanTitle(c.title)) + '</em>' + pg + '.';
         },
         journalSubsequent: function (c) {
-          var pg = c.pages ? ', p. ' + hyphenPages(c.pages) : '';
+          var pg = c.pages ? ', ' + pagePrefix(c.pages) + ' ' + hyphenPages(c.pages) : '';
           return authorLastOnly(c.author) + ', \u2018' + shortTitle(cleanTitle(c.title)) + '\u2019' + pg + '.';
         },
         chapterSubsequent: function (c) {
-          var pg = c.pages ? ', p. ' + hyphenPages(c.pages) : '';
+          var pg = c.pages ? ', ' + pagePrefix(c.pages) + ' ' + hyphenPages(c.pages) : '';
           return authorLastOnly(c.author) + ', \u2018' + shortTitle(cleanTitle(c.title)) + '\u2019' + pg + '.';
         }
       }
@@ -317,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Check for missing required fields and return list
   function getMissingFields(c) {
     var missing = [];
-    if (c.type === 'unknown' || c.type === 'primary') return missing;
+    if (c.type === 'unknown' || c.type === 'primary' || c.type === 'subsequent') return missing;
     if (!c.author) missing.push('author');
     if (c.type === 'journal') {
       if (!c.title) missing.push('title');
@@ -380,6 +389,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var rules = style.rules;
     var cited = {}; // track first vs subsequent by author+title key
+    var authorIndex = {}; // map authorLastName → first-citation data (for subsequent lookups)
     bibliographyEntries = []; // reset
     var biblioSeen = {}; // track unique entries for bibliography
 
@@ -394,10 +404,50 @@ document.addEventListener('DOMContentLoaded', function () {
         return { original: c.raw, formatted: c.raw, formattedHtml: escapeHtml(c.raw), type: 'unknown', isFirst: true, missingFields: [] };
       }
 
+      // Handle pre-detected subsequent/short-form citations
+      if (c.type === 'subsequent') {
+        var authKey = (c.author || '').toLowerCase();
+        var lookup = authorIndex[authKey];
+        var formattedHtml;
+
+        if (lookup && style.system === 'author-date') {
+          // JSNT: build (Author Year: Pages) from stored first-citation data
+          var subC = { author: c.author, year: lookup.year, pages: c.pages };
+          formattedHtml = rules.inText(subC);
+        } else if (lookup) {
+          // JBL/JSOT footnote systems: use the appropriate subsequent rule
+          var subC = { author: c.author, title: c.title, pages: c.pages, bookTitle: c.title };
+          if (lookup.origType === 'journal') {
+            formattedHtml = rules.journalSubsequent(subC);
+          } else if (lookup.origType === 'chapter') {
+            formattedHtml = rules.chapterSubsequent(subC);
+          } else {
+            formattedHtml = rules.bookSubsequent(subC);
+          }
+        } else {
+          // No prior full citation found — best-effort reformat as book subsequent
+          if (style.system === 'author-date') {
+            formattedHtml = '(' + c.author + (c.pages ? ': ' + hyphenPages(c.pages) : '') + ')';
+          } else {
+            var subC = { author: c.author, title: c.title, pages: c.pages, bookTitle: c.title };
+            formattedHtml = rules.bookSubsequent(subC);
+          }
+        }
+
+        var formatted = formattedHtml.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
+        return { original: c.raw, formatted: formatted, formattedHtml: formattedHtml, type: 'subsequent', isFirst: false, missingFields: [] };
+      }
+
       // Build a citation key to track first vs subsequent
       var citeKey = (c.author || '').toLowerCase() + '::' + (c.title || c.bookTitle || '').toLowerCase();
       var isFirst = !cited[citeKey];
       cited[citeKey] = true;
+
+      // Store first-citation data indexed by author last name (for subsequent lookups)
+      var lastNameKey = authorLastOnly(c.author).toLowerCase();
+      if (!authorIndex[lastNameKey]) {
+        authorIndex[lastNameKey] = { year: c.year, origType: c.type, title: c.title || c.bookTitle || '' };
+      }
 
       var formattedHtml;
 
@@ -472,7 +522,15 @@ document.addEventListener('DOMContentLoaded', function () {
     journal: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*(?:\*)?([A-Z][\w\s&:]+?)(?:\*)?[\s,]*(\d+)(?:[.,]\s*(?:no\.\s*)?(\d+))?\s*\((\d{4})\):\s*([\d\-–—,\s]+)/,
 
     // Book: Author, *Title* (City: Publisher, Year), Pages.
-    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/
+    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+
+    // Subsequent/short-form citation: Author, Title, Pages.
+    // Matches: "Betz, Galatians, 280" or "Dunn, "New Perspective," 45-50"
+    // Quote chars optional: double curly, single curly, straight, or none
+    subsequent: /^([A-Z][a-zA-Z\u00C0-\u024F'-]+),\s*(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?(.+?)(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?,?\s+(\d[\d\-\u2013\u2014,\s]*?)\s*\.?\s*$/,
+
+    // Subsequent without pages: "Betz, Galatians."
+    subsequentNoPages: /^([A-Z][a-zA-Z\u00C0-\u024F'-]+),\s*(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?(.+?)(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?\s*\.?\s*$/
   };
 
   function parseCitation(text) {
@@ -549,6 +607,30 @@ document.addEventListener('DOMContentLoaded', function () {
         year: m[5],
         pages: (m[6] || '').trim(),
         translator: translator, urlDoi: urlDoi, raw: trimmed
+      };
+    }
+
+    // Try subsequent/short-form citation (Author, Title, Pages)
+    m = trimmed.match(PATTERNS.subsequent);
+    if (m && m[2].trim().length > 1) {
+      return {
+        type: 'subsequent',
+        author: m[1].trim(),
+        title: m[2].trim().replace(/,\s*$/, ''),
+        pages: (m[3] || '').trim(),
+        raw: trimmed
+      };
+    }
+
+    // Try subsequent without pages (Author, Title.)
+    m = trimmed.match(PATTERNS.subsequentNoPages);
+    if (m && m[2].trim().length > 1) {
+      return {
+        type: 'subsequent',
+        author: m[1].trim(),
+        title: m[2].trim().replace(/,\s*$/, ''),
+        pages: '',
+        raw: trimmed
       };
     }
 
@@ -675,6 +757,13 @@ document.addEventListener('DOMContentLoaded', function () {
           field('Publisher', c.publisher) +
           field('Year', c.year) +
           field('Pages', c.pages);
+      } else if (c.type === 'subsequent') {
+        typeLabel = 'Subsequent';
+        fieldsHtml =
+          field('Author', c.author) +
+          field('Title', c.title) +
+          field('Pages', c.pages) +
+          '<div style="color:#1a56db;font-style:italic;margin-top:0.3rem;">Short-form citation — will be reformatted.</div>';
       } else if (c.type === 'primary') {
         typeLabel = 'Primary';
         fieldsHtml = '<div style="color:#7b2d8e;font-style:italic;">Ancient/primary source — passed through unchanged.</div>' +
@@ -1131,5 +1220,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2500);
   }
 
-  console.log('ScholaCite v3.3 loaded');
+  console.log('ScholaCite v3.5 loaded');
 });
