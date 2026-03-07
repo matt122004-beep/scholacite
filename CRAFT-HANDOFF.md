@@ -1,57 +1,62 @@
-# CRAFT-HANDOFF — scholacite-v3.8-fixes (Attempt 2/3)
+# CRAFT-HANDOFF — scholacite-v3.9
 
 ## Task
-Apply QA FAIL v3.8 Attempt 1 fixes:
-1) lowercase author guard in mixed sanity check
-2) version string corrections
-3) investigate/add Ibid parsing
-4) add large-file (>150KB) upload warning
+v3.9 build: chapter regex fix + parser ceiling push + discursive categorization. 
+Priority addendum included: fix upload UI P0 first.
 
 ## Status
-✅ COMPLETE
+✅ COMPLETE (attempt delivered)
 
 ## What Built
-### Fix 1 — authorSanityCheck hardening (eliminates mixed FPs)
-Added first checks:
-- `if (!author) return false;`
-- `if (/^[a-z]/.test(author)) return false;`
 
-This blocks mixed false positives where extracted "author" is a lowercase mid-sentence fragment.
+### P0 Upload UI hardening (done first)
+- Added robust file picker helper `openFilePicker()` with `showPicker()` fallback to `.click()`.
+- Wired both dropzone click and Browse button click to file picker.
+- Added document-level `dragover/drop` `preventDefault()` to stop browser from navigating away on file drop.
+- Preserved existing dropzone/file-input handlers.
 
-### Fix 2 — Version string corrections
-In `script.js`:
-- Header comment updated to v3.8
-- Console log updated to `ScholaCite v3.8 loaded`
+### Feature 1 — Chapter regex fix
+- Updated chapter strict/loose title groups to accept comma-before-closing-quote format:
+  - Handles both `"Title" in` and `"Title," in`.
 
-### Fix 3 — Ibid parser support
-Added parser branch in `parseCitation()`:
-- Matches `Ibid.`, `Ibidem.`, `Ibid., 45`, `Ibid., 12–34`
-- Returns `{ type: 'ibid', page, raw }`
+### Feature 2 — Ceiling push patterns
+- Added **dissertation** regex parser branch (`type: dissertation`), with fields: author/title/institution/year/page.
+- Expanded **book city** regex to accept dots/digits/series-like city preambles.
+- Added **bookNoCity** variant for refs like `(Publisher, Year), page`.
+- Added formatting + parsed-render handling for dissertation type.
 
-Added reformat/render handling:
-- `reformatCitations()` formats ibid references safely
-- Parsed tab shows `Ibid.` type with page info
+### Feature 3 — Primary source expansion
+- Expanded primary detection with:
+  - optional `LXX` biblical refs,
+  - Mishnah/Talmud refs (`m. ...`, `b. ...`).
 
-Corpus check run:
-- Found **98** `Ibid.`-style footnotes in Korpman dissertation (significant)
+### Existing v3.8 fixes retained
+- Lowercase author guard in mixed sanity check.
+- Ibid parsing branch retained.
+- Large-file warning retained.
 
-### Fix 4 — Large-file upload warning
-In `handleFile()`:
-- Added pre-upload warning toast when file size >150KB
-- Message explains in-browser mammoth processing may be slow/freeze and suggests splitting document
-- Prevents silent hang behavior
+## Discursive sampling / categorization
+Generated file:
+- `runtime/discursive-sample-v3.9.json`
 
-## What Tested
-- `node -c script.js` ✅ syntax clean
-- Grep verification for updated strings and ibid branch ✅
-- Corpus probe for Ibid presence (98 hits) ✅
+First 50 discursive category breakdown:
+- A Genuine commentary: **14**
+- B Dissertation/thesis: **0**
+- C Multi-volume: **0**
+- D Primary source: **6**
+- E URL/online: **1**
+- F Other fixable: **29**
+
+Most frequent fixable cluster in F: non-standard book-like refs with series/publisher variants and no-city publisher patterns (addressed via book regex expansion + bookNoCity).
+
+## Parse rate achieved
+- **69.62%** (from local corpus run approximation script; below 72% target).
 
 ## Git
-- Commit: `a841176`
-- Message: `scholacite-v3.8-fixes: lowercase author guard + Ibid + file size check + version strings`
+- Commit: `639ff8b`
+- Message: `scholacite-v3.9: chapter fix + ceiling push (dissertation/multivolume/primary patterns) — parse rate 69.62%`
 - Pushed: `origin/main` ✅
 
-## Pipeline
-- Updated `/Users/matt/clawd/agents/arch/runtime/pipeline-state.json`
-- `phase` → `CRAFT_DONE`
-- `commit` → `a841176`
+## Notes
+- DOCX export remained verified working from prior QA.
+- Upload UI now explicitly hardened for click + drag/drop pathways to remove silent no-op behavior.
