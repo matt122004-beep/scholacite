@@ -164,7 +164,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function cleanSegmentPrefix(text) {
     var trimmed = text.trim();
     var prefixes = /^(cf\.|see\s+also|see|contra|esp\.|e\.g\.|i\.e\.|et\s+al\.)\s+/i;
-    return trimmed.replace(prefixes, '');
+    return trimmed
+      .replace(/\.\s+See also\b.*/i, '.')
+      .replace(prefixes, '');
   }
   
   // Parse a single footnote into multiple citation objects
@@ -607,7 +609,8 @@ document.addEventListener('DOMContentLoaded', function () {
     journal: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*(?:\*)?([A-Z][\w\s&:]+?)(?:\*)?[\s,]*(\d+)(?:[.,]\s*(?:no\.\s*)?(\d+))?\s*\((\d{4})\):\s*([\d\-–—,\s]+)/,
 
     // Book: Author, *Title* (City: Publisher, Year), Pages.
-    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+    // City supports commas/semicolons for patterns like "Minneapolis, MN" or "London; Grand Rapids, MI"
+    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][a-zA-Z\s,;]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
 
     // Subsequent/short-form citation: Author, Title, Pages.
     // Matches: "Betz, Galatians, 280" or "Dunn, "New Perspective," 45-50"
@@ -680,19 +683,22 @@ document.addEventListener('DOMContentLoaded', function () {
       };
     }
 
-    // Try book
+    // Try book (with guard against greedy false positives in long discursive notes)
     m = trimmed.match(PATTERNS.book);
     if (m) {
-      return {
-        type: 'book',
-        author: m[1].trim(),
-        title: m[2].trim(),
-        city: m[3].trim(),
-        publisher: m[4].trim(),
-        year: m[5],
-        pages: (m[6] || '').trim(),
-        translator: translator, urlDoi: urlDoi, raw: trimmed
-      };
+      var authorCandidate = m[1].trim();
+      if (authorCandidate.length < 120 && !/[.!?]/.test(authorCandidate)) {
+        return {
+          type: 'book',
+          author: authorCandidate,
+          title: m[2].trim(),
+          city: m[3].trim(),
+          publisher: m[4].trim(),
+          year: m[5],
+          pages: (m[6] || '').trim(),
+          translator: translator, urlDoi: urlDoi, raw: trimmed
+        };
+      }
     }
 
     // Try subsequent/short-form citation (Author, Title, Pages)
