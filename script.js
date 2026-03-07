@@ -1,4 +1,4 @@
-// ScholaCite v3.8 — Citation Reformatter Engine (Mixed Detection + Export Hardening)
+// ScholaCite v3.10 — Citation Reformatter Engine (Mixed Detection + Export Hardening)
 // All processing is client-side. No data leaves the browser.
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function () {
   //  MIXED FOOTNOTE DETECTION (v3.8 — see-verb anchoring)
   // ══════════════════════════════════════════════════════════
 
-  const SEE_VERBS = /\b(see(?:\s+also)?|cf\.(?:\s+also)?|compare|contra|note(?:\s+also)?|for\s+which\s+see)\b/i;
+  const SEE_VERBS = /\b(see(?:\s+also)?|c\.?f\.?(?:\s+also)?|compare|contra|note(?:\s+also)?|for\s+which\s+see)\b/i;
 
   function findMixedBoundary(text) {
     var m = text.match(SEE_VERBS);
@@ -740,20 +740,19 @@ document.addEventListener('DOMContentLoaded', function () {
     // Journal article: Author, "Article Title," *Journal* Volume (Year): Pages.
     journal: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*(?:\*)?([A-Z][\w\s&:]+?)(?:\*)?[\s,]*(\d+)(?:[.,]\s*(?:no\.\s*)?(\d+))?\s*\((\d{4})\):\s*([\d\-–—,\s]+)/,
 
-    // Book: Author, *Title* (City: Publisher, Year), Pages.
-    // City supports commas/semicolons/periods/numbers for patterns like "EHS.T 137; Bern, Frankfurt"
-    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][a-zA-Z0-9.\s,;\-&]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+    // Book: Author, *Title*, SERIES (City: Publisher, Year), Pages.
+    // Supports optional series segment between title and publisher parentheses.
+    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?(?:,\s*([^()]+?))?[\s,]*\(([A-Z][a-zA-Z0-9.\s,;\-&]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
 
     // Book without city: Author, *Title* (Publisher, Year), Pages.
     bookNoCity: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([^:()]{3,}?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
 
     // Subsequent/short-form citation: Author, Title, Pages.
-    // Matches: "Betz, Galatians, 280" or "Dunn, "New Perspective," 45-50"
-    // Quote chars optional: double curly, single curly, straight, or none
-    subsequent: /^([A-Z][a-zA-Z\u00C0-\u024F'-]+),\s*(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?(.+?)(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?,?\s+(\d[\d\-\u2013\u2014,\s]*?)\s*\.?\s*$/,
+    // Supports multi-author + et al. forms and range pages.
+    subsequent: /^([A-Z][a-zA-Z\u00C0-\u024F'.-]+(?:\s+(?:and|&|et\s+al\.?|[A-Z][a-zA-Z\u00C0-\u024F'.-]+))*)\s*,\s*(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?(.+?)(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?,?\s+(\d[\d\-\u2013\u2014,\s]*?)\s*\.?\s*$/,
 
     // Subsequent without pages: "Betz, Galatians."
-    subsequentNoPages: /^([A-Z][a-zA-Z\u00C0-\u024F'-]+),\s*(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?(.+?)(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?\s*\.?\s*$/
+    subsequentNoPages: /^([A-Z][a-zA-Z\u00C0-\u024F'.-]+(?:\s+(?:and|&|et\s+al\.?|[A-Z][a-zA-Z\u00C0-\u024F'.-]+))*)\s*,\s*(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?(.+?)(?:[""\u201c\u201d]|['\u2018\u2019]|\*)?\s*\.?\s*$/
   };
 
   function parseCitation(text) {
@@ -841,10 +840,11 @@ document.addEventListener('DOMContentLoaded', function () {
           type: 'book',
           author: authorCandidate,
           title: m[2].trim(),
-          city: m[3].trim(),
-          publisher: m[4].trim(),
-          year: m[5],
-          pages: (m[6] || '').trim(),
+          series: (m[3] || '').trim(),
+          city: m[4].trim(),
+          publisher: m[5].trim(),
+          year: m[6],
+          pages: (m[7] || '').trim(),
           translator: translator, urlDoi: urlDoi, raw: trimmed
         };
       }
@@ -1548,5 +1548,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2500);
   }
 
-  console.log('ScholaCite v3.8 loaded');
+  console.log('ScholaCite v3.10 loaded');
 });
