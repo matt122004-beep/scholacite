@@ -94,3 +94,28 @@
 +- Handle errors gracefully
 +
 +Create all files: index.html, style.css, main.py, requirements.txt, README.md
+
+# 2026-03-06 16:03:10.180949
++Apply QA fixes from /Users/matt/clawd/agents/critic/runtime/qa-results/scholacite-v3.6.md to script.js.
++
++Required fixes:
++1) In PATTERNS.book city group, allow commas/semicolons for city/state and dual-city. Change city regex from [A-Z][\w\s]+? to [A-Z][a-zA-Z\s,;]+? in the group before colon.
++2) In parseCitation book branch, add guard to prevent greedy false positives: only accept book match when author candidate length < 120 AND author has no sentence punctuation [.!?]. If guard fails, do not return book; continue to other patterns.
++3) In cleanSegmentPrefix, strip trailing .
+
+# 2026-03-06 16:03:10.181166
++Apply QA fixes from /Users/matt/clawd/agents/critic/runtime/qa-results/scholacite-v3.6.md to script.js.
++
++Required fixes:
++1) In PATTERNS.book city group, allow commas/semicolons for city/state and dual-city. Change city regex from [A-Z][\w\s]+? to [A-Z][a-zA-Z\s,;]+? in the group before colon.
++2) In parseCitation book branch, add guard to prevent greedy false positives: only accept book match when author candidate length < 120 AND author has no sentence punctuation [.!?]. If guard fails, do not return book; continue to other patterns.
++3) In cleanSegmentPrefix, strip trailing .
+
+# 2026-03-06 20:54:33.898692
++Implement ScholaCite v3.7 mixed footnote detection system in script.js and any necessary minimal UI updates in index.html.
+
+# 2026-03-06 20:54:36.144290
++Requirements:
+
+# 2026-03-06 20:56:29.863993
++1) Add pre-parsing mixed detector AFTER normal parse attempts fail but BEFORE segment is flagged discursive.
