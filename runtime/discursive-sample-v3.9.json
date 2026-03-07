@@ -1,0 +1,313 @@
+{
+  "sample_size": 50,
+  "breakdown": {
+    "A": 14,
+    "B": 0,
+    "C": 0,
+    "D": 6,
+    "E": 1,
+    "F": 29
+  },
+  "items": [
+    {
+      "idx": 1,
+      "footnote": 2,
+      "category": "A",
+      "text": "Translations in this thesis are taken from the NRSV and NRSVue, unless otherwise noted. In this case, the translation is noted as my own."
+    },
+    {
+      "idx": 2,
+      "footnote": 5,
+      "category": "D",
+      "text": "Luke 12:35: \u201c \u1f1c\u03c3\u03c4\u03c9\u03c3\u03b1\u03bd \u1f51\u03bc\u1ff6\u03bd \u03b1\u1f31 \u1f40\u03c3\u03c6\u03cd\u03b5\u03c2 \u03c0\u03b5\u03c1\u03b9\u03b5\u03b6\u03c9\u03c3\u03bc\u03ad\u03bd\u03b1\u03b9\u2e03 \u03ba\u03b1\u1f76 \u03bf\u1f31 \u03bb\u03cd\u03c7\u03bd\u03bf\u03b9 \u03ba\u03b1\u03b9\u03cc\u03bc\u03b5\u03bd\u03bf\u03b9.\u201d"
+    },
+    {
+      "idx": 3,
+      "footnote": 6,
+      "category": "F",
+      "text": "Tashio Aono, Die Entwicklung des paulinischen Gerichtsgedankens bei den apostolischen V\u00e4tern (EHS.T 137; Bern, Frankfurt, and Las Vegas: Peter Lang, 1979), 178."
+    },
+    {
+      "idx": 4,
+      "footnote": 8,
+      "category": "A",
+      "text": "For a full discussion of the ages of the characters, see the exposition in chapter 3."
+    },
+    {
+      "idx": 5,
+      "footnote": 9,
+      "category": "D",
+      "text": "O\u2019Loughlin, The Didache, 133. It appears to echo a common biblical phrase found in both the Septuagint and New Testament (gird your loins), though less clearly, yet \u201cit probably implies the same imagery as that in Luke 12:35.\u201d Niederwimmer and Attridge, The Didache, 215. Niederwimmer remarks that: \u201c\u0391\u1f31 \u1f40\u03c3\u03c6\u03cd\u03b5\u03c2 \u1f51\u03bc\u1ff6\u03bd \u03bc\u1f74 \u1f10\u03ba\u03bb\u03c5\u03ad\u03c3\u03b8\u03c9\u03c3\u03b1\u03bd is less clear than the analogous biblical expressions in Exod 12:11*"
+    },
+    {
+      "idx": 6,
+      "footnote": 9,
+      "category": "D",
+      "text": "Jer 1:17*, and elsewhere in the Jewish Scriptures, and then in Luke 12:35*"
+    },
+    {
+      "idx": 7,
+      "footnote": 9,
+      "category": "F",
+      "text": "Eph 6:14*"
+    },
+    {
+      "idx": 8,
+      "footnote": 10,
+      "category": "A",
+      "text": "For a full discussion of the earliest reception history of this parable post-dating the Didache\u2019s reference, particularly with reference to the Epistula Apostolorum, Gospel of Thomas, and the artwork at Dura-Europas, see chapters 4 and 6."
+    },
+    {
+      "idx": 9,
+      "footnote": 13,
+      "category": "A",
+      "text": "For a deeper discussion regarding the evaluation of the actions of the foolish virgins, see chapter 5."
+    },
+    {
+      "idx": 10,
+      "footnote": 14,
+      "category": "A",
+      "text": "See a deeper discussion regarding the evidence for the foolish virgins successfully getting their oil in chapter 5."
+    },
+    {
+      "idx": 11,
+      "footnote": 15,
+      "category": "A",
+      "text": "It is likely though that, at the very least, the author of the Didache agreed with the Matthean parable that the foolish virgins were indeed foolish for their lack of preparation (however he imagined the circumstances of how that came about), given that he notes \u201cyou should be ready because you do not know the hour at which our Lord is coming.\u201d Quoting the translation given by O\u2019Loughlin, The Didache, 133. Yet, despite this, he curiously does not place the emphasis on the oil as later interpreters come to do, but the flame itself."
+    },
+    {
+      "idx": 12,
+      "footnote": 22,
+      "category": "F",
+      "text": "Peter Yaw Oppong-Kumi, Matthean Sets of Parables (T\u00fcbingen, Germany: Mohr Siebeck, 2013), 359."
+    },
+    {
+      "idx": 13,
+      "footnote": 23,
+      "category": "F",
+      "text": "Jan Lambrecht, Out of the Treasure: The Parables in the Gospel of Matthew (Louvain Theological & Pastoral Monographs Book 10; Louvain: Peeters, 1998), Kindle Edition. \u201cMatthew has also composed the introduction of verse la. This is evident through the use of \u2018then,\u2019 the expression \u2018the kingdom of heaven\u2019 and the passive-deponent form of the verb homoioo (\u2018to compare,\u2019 here in the sense of \u2018will be like\u2019). The future of the same verb also occurs in 7:24 and 26 where, in all probability, it must also be ascribed to Matthew. Whether or not the evangelist substituted this formula for another introduction can no longer be established.\u201d"
+    },
+    {
+      "idx": 14,
+      "footnote": 25,
+      "category": "F",
+      "text": "Add sources"
+    },
+    {
+      "idx": 15,
+      "footnote": 29,
+      "category": "F",
+      "text": "Ulrich Luz, Matthew 21\u201328, 231. \u201cThe original parable, whose wording we are not able to reconstruct, may come from Jesus.\u201d"
+    },
+    {
+      "idx": 16,
+      "footnote": 35,
+      "category": "A",
+      "text": "Some scholars have argued that the version of the parable found in the second-century Epistula Apostolorum represents closer the original version of the parable that pre-dated Matthew. From this perspective, the parable was adapted and changed in various ways through its early reception. As will be argued in chapter 6, however, this proposal seems unlikely and a more probable assumption would be that the Epistula has rewritten the Matthean parable (or a similar oral form of the parable) to avoid Matthew\u2019s more negative depictions of the wise virgins. Thus, those like Ulrich Luz argue that \u201cWe have no versions that are independent of the Matthean story.\u201d Ibid., 231."
+    },
+    {
+      "idx": 17,
+      "footnote": 37,
+      "category": "F",
+      "text": "To borrow Amy-Jil Levine\u2019s description of them. See"
+    },
+    {
+      "idx": 18,
+      "footnote": 39,
+      "category": "A",
+      "text": "Rosenblatt lamented this, noting that \u201cWhat shall account for the fact that the story of the ten virgins and their lamps doesn't receive major attention in recent books on parables?\u201d Rosenblatt, \u201cGot into the Party after All,\u201d 174. She argues that one explanation \u201cis its liturgical invisibility, like other scriptural narratives about women which don't appear in the lectionary.\u201d Writing in the 90s, she noted that based on the then current Roman Catholic Lectionary, \u201cit is read once every three years for the Sunday Eucharist, but may not be heard for six years.\u201d Ibid., 175. Academically, the lack of interpretive diversity she posits is due to the \u201coddness\u201d of the story, noting that \u201cthe parable of the ten virgins has resisted all but the most conventional readings."
+    },
+    {
+      "idx": 19,
+      "footnote": 40,
+      "category": "A",
+      "text": "For example, the following list of popular works on the parables represent the standard introductions for this material. Among them, not one chapter reviews the Parable of the Ten Virgins."
+    },
+    {
+      "idx": 20,
+      "footnote": 41,
+      "category": "A",
+      "text": "For example, Amy Jill-Levine\u2019s celebrated work on the parables ignores this Matthean text as well."
+    },
+    {
+      "idx": 21,
+      "footnote": 51,
+      "category": "A",
+      "text": "For example, see Epiphanius\u2019 comment (Interpretation of the Gospels 36) that explicitly references this verse: \u201c \u2018As the bridegroom was delayed, they all slumbered and slept. But at midnight there was a cry, \u201cBehold, the bridegroom! Come out to meet him.\u201d\u00a0\u2018 Likewise, the blessed apostle, Paul, declared, \u2018For the Lord himself will descend from heaven with a cry of command, with the archangel\u2019s call and with the sound of the trumpet of God. And the dead in Christ will rise first"
+    },
+    {
+      "idx": 22,
+      "footnote": 51,
+      "category": "F",
+      "text": "then we who are alive, who are left, shall be caught up together with them in the clouds to meet the Lord in the air"
+    },
+    {
+      "idx": 23,
+      "footnote": 51,
+      "category": "F",
+      "text": "and so we shall always be with the Lord.\u2019 \u201d Ibid., 219."
+    },
+    {
+      "idx": 24,
+      "footnote": 56,
+      "category": "F",
+      "text": "CTS 3:171-73 (CO 45:683-84)"
+    },
+    {
+      "idx": 25,
+      "footnote": 58,
+      "category": "F",
+      "text": "Nikos Kazantzakis, The Last Temptation of Christ (trans. P. A. Bien; New York: Simon & Schuster, 1960), 217."
+    },
+    {
+      "idx": 26,
+      "footnote": 60,
+      "category": "E",
+      "text": "Information taken from IMDB. https://www.imdb.com/title/tt0167234/?ref_=ttep_ep_10 [accessed Nov. 12, 2024]."
+    },
+    {
+      "idx": 27,
+      "footnote": 61,
+      "category": "F",
+      "text": "One cannot help but notice that the five wise virgins are all presented with light and fair skin, whereas three of the five foolish virgins are presented as darker colored Palestinians. It is hard to know what to make of this odd feature of the animation, or who is to blame for this apparently racially insensitive depiction: director, animators, etc.?"
+    },
+    {
+      "idx": 28,
+      "footnote": 63,
+      "category": "A",
+      "text": "See chapter 7 and its discussion of scholarly attempts to reconstruct the historical background of the parable."
+    },
+    {
+      "idx": 29,
+      "footnote": 64,
+      "category": "A",
+      "text": "Sara Parks has argued that this is something seen in the earliest stratum of material found in the Q source and that this may indicate that the Historical Jesus regularly presented such parallels between men and women."
+    },
+    {
+      "idx": 30,
+      "footnote": 66,
+      "category": "F",
+      "text": "J. Massingberd Ford, \u201cThe Parable of the Foolish Scholars (Matt. xxv I-I3),\u201d Novum Testamentum 9 (1967), 107. See also Rosenblatt: \u201cWhen compared with the trend of the treatment of women in the Gospels and women's overall relationships with Jesus, the polemical aspect of the parable stands out in relief. What is consistent with a gospel portrait of Jesus and women is the kingdom-bridegroom parable which presents women in an attractive and inspiring light. What is inconsistent with Matthew's own portrayal of women throughout the rest of the Gospel is the suggestion that the Lord rejects half the community of women in the wisdom-foolishness polemic.\u201d She believed that something needed to explain \u201cfor the simultaneous presence of a friendly and an unfriendly portrayal of women.\u201d Rosenblatt, \u201cGot into the Party after All,\u201d 172."
+    },
+    {
+      "idx": 31,
+      "footnote": 67,
+      "category": "F",
+      "text": "Rosenblatt notes that: \u201cA feminist reading points up the alienating features of the parable and raises suspicions about the purpose for it in Matthew\u2019s Gospel.\u201d Rosenblatt, \u201cGot into the Party after All,\u201d 172. She also proposes that the Bridegroom represents a potentially negative evaluation of women. \u201cOne interpretation for the delay, favorable to the bride, has proposed that the delay concerns the complicated negotiations over the price of the bride, to be paid by the groom as compensation to the bride's family. She is very valuable in her father\u2019s eyes, so the bargaining is protracted. But this perspective cuts both ways. It could also mean that the groom, ready to marry, is unwilling to pay the original price to the bride's family. They are all delayed because they are caught in a bind over his unwillingness to pay a price he doesn't think she\u2019s worth, and their desire to marry her off, even at a bargain price.\u201d Rosenblatt, \u201cGot into the Party after All,\u201d 184."
+    },
+    {
+      "idx": 32,
+      "footnote": 70,
+      "category": "F",
+      "text": "Jan Lambrecht, Out of the Treasure: The Parables in the Gospel of Matthew (Louvain Theological & Pastoral Monographs Book 10; Louvain: Peeters, 1998), Kindle Edition."
+    },
+    {
+      "idx": 33,
+      "footnote": 71,
+      "category": "F",
+      "text": "While this thesis does not define itself with the term of feminist, I am not hiding the fact that I embrace the term. I have previously published feminist readings of stories in the Hebrew Bible, including Lot\u2019s daughters and the prophetess Noadiah. See"
+    },
+    {
+      "idx": 34,
+      "footnote": 72,
+      "category": "A",
+      "text": "As will be evidenced in this chapter, a number of critiques (footnote needs development)"
+    },
+    {
+      "idx": 35,
+      "footnote": 77,
+      "category": "F",
+      "text": "While the idea has long been recognized in scholarship, the term itself appears to owe itself to John Dominic Crossan and his work on parables."
+    },
+    {
+      "idx": 36,
+      "footnote": 79,
+      "category": "F",
+      "text": "J. Knox Chamblin, Matthew: A Mentor Commentary, Mentor Commentaries (Ross-shire, Great Britain: Mentor, 2010), 1226."
+    },
+    {
+      "idx": 37,
+      "footnote": 86,
+      "category": "F",
+      "text": "Fran\u00e7ois Vouga, \u201cZur form- und redaktionsgeschichtlichen Definition der Gattungen: Gleichnis, Parabel/Fabel, Beispielerz\u00e4hlungen,\u201d in Die Gleichnisreden Jesu 1899\u20131999: Beitr\u00e4ge zum Dialog mit Adolf J\u00fclicher, ed. Ulrich Mell (BZNW 103; Berlin: De Gruyter, 1999), 75\u201395"
+    },
+    {
+      "idx": 38,
+      "footnote": 86,
+      "category": "D",
+      "text": "Fran\u00e7ois Vouga, \u201cFormgeschichtliche \u00dcberlegungen zu den Gleichnissen und zu den Fabeln der Jesus-Tradition auf dem Hintergrund der hellenistischen Literaturgeschichte,\u201d in The Four Gospels: Festschrift for Frans Neirynck, ed. Frans van Segroeck, Christopher M. Tuckett, Gilbert van Belle, and Joseph Verheyden (BETL 100; Leuven: Peeters, 1992), 173\u2013187."
+    },
+    {
+      "idx": 39,
+      "footnote": 88,
+      "category": "F",
+      "text": "Lieve Teugels, \u201cTalking Animals in Parables: A Contradictio in Terminis?\u201d in Parables in Changing Contexts: Essays on the Study of Parables in Christianity, Judaism, Islam, and Buddhism, ed. Marcel Poorthuis and Eric Ottenheijm (JCP 35; Leiden: Brill, 2020), 129\u2013148."
+    },
+    {
+      "idx": 40,
+      "footnote": 89,
+      "category": "F",
+      "text": "Albertina Oegema, Jonathan Pater, and Martijn Stoutjesdijk, ed. Overcoming Dichotomies: Parables, Fables, and Similes in the Graeco-Roman World (WUNT 483; T\u00fcbingen: Mohr Siebeck, 2022)"
+    },
+    {
+      "idx": 41,
+      "footnote": 90,
+      "category": "F",
+      "text": "Beavis, \u201cParable and Fable,\u201d 475."
+    },
+    {
+      "idx": 42,
+      "footnote": 91,
+      "category": "D",
+      "text": "M. Boucher, The Mysterious Parable: A Literary Study (Washington, D.C.: Catholic Biblical Association of America, 1977), 13. Italics original."
+    },
+    {
+      "idx": 43,
+      "footnote": 97,
+      "category": "F",
+      "text": "quite likely Matthew has either displaced or edited an original introduction.\u201d"
+    },
+    {
+      "idx": 44,
+      "footnote": 98,
+      "category": "F",
+      "text": "Eduard Schweizer, Das Evangelium nach Matth\u00e4us (G\u00f6ttingen: Vandenhoeck & Ruprecht, 1973), 304. Translation: \u201cIt may have once belonged to a special collection of parables\u2026\u201d"
+    },
+    {
+      "idx": 45,
+      "footnote": 100,
+      "category": "F",
+      "text": "Beavis already does this in her own article. See Beavis, \u201cParable and Fable,\u201d 498."
+    },
+    {
+      "idx": 46,
+      "footnote": 105,
+      "category": "F",
+      "text": "John Dominic Crossan, Finding Is The First Act: Trove Folktales and Jesus\u2019 Treasure Parable (Eugene, OR: Wipf & Stock, 2009 [1979]), 111."
+    },
+    {
+      "idx": 47,
+      "footnote": 106,
+      "category": "D",
+      "text": "M. Poorthuis, \u201cThe Invasion of the King: The Virtual Mashal as Foundation of Storytelling,\u201d in Parables in Changing Contexts: Essays on the Study of Parables in Christianity, Judaism, Islam and Buddhism, ed. M. Poorthuis and E. Ottenheijm (JCP 35; Leiden: Brill, 2019), 209."
+    },
+    {
+      "idx": 48,
+      "footnote": 107,
+      "category": "F",
+      "text": "John L. McKenzie, Light on the Gospels (Thomas Moore Publishing, 1976), 151"
+    },
+    {
+      "idx": 49,
+      "footnote": 108,
+      "category": "F",
+      "text": "Pokorn\u00fd, \u201cJesus Research as Feedback,\u201d 357"
+    },
+    {
+      "idx": 50,
+      "footnote": 113,
+      "category": "F",
+      "text": "Pokorn\u00fd, \u201cJesus Research as Feedback,\u201d 357"
+    }
+  ]
+}

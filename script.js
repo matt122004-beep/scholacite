@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ── DOM refs ──
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('file-input');
+  const browseBtn = document.getElementById('browse-btn');
   const fileInfo = document.getElementById('file-info');
   const fileName = document.getElementById('file-name');
   const clearFileBtn = document.getElementById('clear-file');
@@ -42,11 +43,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  function openFilePicker() {
+    if (!fileInput) return;
+    if (typeof fileInput.showPicker === 'function') {
+      try {
+        fileInput.showPicker();
+        return;
+      } catch (e) {
+        // Fallback below
+      }
+    }
+    fileInput.click();
+  }
+
   // ── Keyboard: Enter on dropzone triggers file browse ──
   dropzone.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      fileInput.click();
+      openFilePicker();
     }
   });
 
@@ -468,7 +482,8 @@ document.addEventListener('DOMContentLoaded', function () {
       /^(Josephus|Philo|Eusebius|Tacitus|Pliny|Suetonius|Dio|Strabo|Plutarch|Origen|Augustine|Jerome|Irenaeus|Tertullian|Clement)/i,
       /\b(Ant\.|B\.J\.|J\.W\.|Hist\.\s*eccl|Haer\.|Adv\.\s*Marc|Strom\.|Leg\.\s*All|QG|QE)\b/,
       /\b(LXX|MT|4Q\d|1QS|1QM|CD|11Q\d|P\.Oxy|BGU)\b/,
-      /\b(Gen|Exod|Lev|Num|Deut|Josh|Judg|Ruth|1\s*Sam|2\s*Sam|1\s*Kgs|2\s*Kgs|Isa|Jer|Ezek|Dan|Hos|Joel|Amos|Obad|Jonah|Mic|Nah|Hab|Zeph|Hag|Zech|Mal|Ps|Prov|Job|Song|Eccl|Lam|Esth|Neh|1\s*Chr|2\s*Chr|Ezra|Matt|Mark|Luke|John|Acts|Rom|1\s*Cor|2\s*Cor|Gal|Eph|Phil|Col|1\s*Thess|2\s*Thess|1\s*Tim|2\s*Tim|Tit|Phlm|Heb|Jas|1\s*Pet|2\s*Pet|1\s*John|2\s*John|3\s*John|Jude|Rev)\s+\d+[.:]\d+/
+      /\b(?:LXX\s+)?(Gen|Exod|Lev|Num|Deut|Josh|Judg|Ruth|1\s*Sam|2\s*Sam|1\s*Kgs|2\s*Kgs|Isa|Jer|Ezek|Dan|Hos|Joel|Amos|Obad|Jonah|Mic|Nah|Hab|Zeph|Hag|Zech|Mal|Ps|Prov|Job|Song|Eccl|Lam|Esth|Neh|1\s*Chr|2\s*Chr|Ezra|Matt|Mark|Luke|John|Acts|Rom|1\s*Cor|2\s*Cor|Gal|Eph|Phil|Col|1\s*Thess|2\s*Thess|1\s*Tim|2\s*Tim|Tit|Phlm|Heb|Jas|1\s*Pet|2\s*Pet|1\s*John|2\s*John|3\s*John|Jude|Rev)\s+\d+[.:]\d+/,
+      /\b(?:m\.|b\.)\s*[A-Z][a-z]+\s+\d+(?:[:.]\d+|[ab])\b/
     ];
     // Only match if it looks like a short reference (not a full citation)
     if (text.length > 150) return false;
@@ -503,6 +518,10 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if (c.type === 'chapter') {
       if (!c.title) missing.push('chapter title');
       if (!c.bookTitle) missing.push('book title');
+      if (!c.year) missing.push('year');
+    } else if (c.type === 'dissertation') {
+      if (!c.title) missing.push('title');
+      if (!c.institution) missing.push('institution');
       if (!c.year) missing.push('year');
     }
     return missing;
@@ -655,7 +674,7 @@ document.addEventListener('DOMContentLoaded', function () {
           biblioSeen[citeKey] = true;
           var biblioHtml;
           if (c.type === 'journal') biblioHtml = rules.journalBiblio(c);
-          else if (c.type === 'book') biblioHtml = rules.bookBiblio(c);
+          else if (c.type === 'book' || c.type === 'dissertation') biblioHtml = rules.bookBiblio(c);
           else if (c.type === 'chapter') biblioHtml = rules.chapterBiblio(c);
           else biblioHtml = escapeHtml(c.raw);
           bibliographyEntries.push({ html: biblioHtml, text: biblioHtml.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' '), sortKey: authorLastOnly(c.author) + c.year });
@@ -666,6 +685,8 @@ document.addEventListener('DOMContentLoaded', function () {
           formattedHtml = isFirst ? rules.journalFirst(c, style) : rules.journalSubsequent(c);
         } else if (c.type === 'book') {
           formattedHtml = isFirst ? rules.bookFirst(c) : rules.bookSubsequent(c);
+        } else if (c.type === 'dissertation') {
+          formattedHtml = authorFirstLast(c.author) + ', “' + cleanTitle(c.title) + '," (' + escapeHtml(c.institution || '') + ', ' + c.year + ')' + (c.page ? ', ' + c.page : '') + '.';
         } else if (c.type === 'chapter') {
           formattedHtml = isFirst ? rules.chapterFirst(c) : rules.chapterSubsequent(c);
         } else {
@@ -707,18 +728,24 @@ document.addEventListener('DOMContentLoaded', function () {
   // Regex patterns for common citation formats
   const PATTERNS = {
     // Chapter in edited volume (strict): Author, "Chapter," in *Book*, ed. Editor (City: Publisher, Year), Pages.
-    chapterStrict: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*in\s+(?:\*)?(.+?)(?:\*)?,\s*eds?\.\s*(.+?)\s*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+    chapterStrict: /^(.+?),\s*[""\u201c](.+?)(?:,)?[""\u201d],?\s*in\s+(?:\*)?(.+?)(?:\*)?,\s*eds?\.\s*(.+?)\s*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
 
     // Chapter in edited volume (loose): Author, "Chapter," in *Book* (City: Publisher, Year), Pages.
     // Catches chapters without explicit "ed." marker
-    chapterLoose: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*in\s+(?:\*)?(.+?)(?:\*)?\s*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+    chapterLoose: /^(.+?),\s*[""\u201c](.+?)(?:,)?[""\u201d],?\s*in\s+(?:\*)?(.+?)(?:\*)?\s*\(([A-Z][\w\s]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+
+    // Dissertation/thesis: Author, "Title," (PhD diss., Institution, Year), Page.
+    dissertation: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*\((?:PhD|Ph\.D\.|Th\.D\.|ThD|MA|MTh)\.?\s+(?:diss\.|thesis)\.?,\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/i,
 
     // Journal article: Author, "Article Title," *Journal* Volume (Year): Pages.
     journal: /^(.+?),\s*[""\u201c](.+?)[""\u201d],?\s*(?:\*)?([A-Z][\w\s&:]+?)(?:\*)?[\s,]*(\d+)(?:[.,]\s*(?:no\.\s*)?(\d+))?\s*\((\d{4})\):\s*([\d\-–—,\s]+)/,
 
     // Book: Author, *Title* (City: Publisher, Year), Pages.
-    // City supports commas/semicolons for patterns like "Minneapolis, MN" or "London; Grand Rapids, MI"
-    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][a-zA-Z\s,;]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+    // City supports commas/semicolons/periods/numbers for patterns like "EHS.T 137; Bern, Frankfurt"
+    book: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([A-Z][a-zA-Z0-9.\s,;\-&]+?):\s*(.+?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
+
+    // Book without city: Author, *Title* (Publisher, Year), Pages.
+    bookNoCity: /^(.+?),\s*(?:\*)?([^*""\u201c]+?)(?:\*)?[\s,]*\(([^:()]{3,}?),\s*(\d{4})\)(?:,\s*([\d\-–—,\s]+))?/,
 
     // Subsequent/short-form citation: Author, Title, Pages.
     // Matches: "Betz, Galatians, 280" or "Dunn, "New Perspective," 45-50"
@@ -775,6 +802,20 @@ document.addEventListener('DOMContentLoaded', function () {
       };
     }
 
+    // Try dissertation/thesis
+    m = trimmed.match(PATTERNS.dissertation);
+    if (m) {
+      return {
+        type: 'dissertation',
+        author: m[1].trim(),
+        title: m[2].trim(),
+        institution: m[3].trim(),
+        year: m[4],
+        page: (m[5] || '').trim(),
+        raw: trimmed
+      };
+    }
+
     // Try journal
     m = trimmed.match(PATTERNS.journal);
     if (m) {
@@ -804,6 +845,24 @@ document.addEventListener('DOMContentLoaded', function () {
           publisher: m[4].trim(),
           year: m[5],
           pages: (m[6] || '').trim(),
+          translator: translator, urlDoi: urlDoi, raw: trimmed
+        };
+      }
+    }
+
+    // Try book without explicit city
+    m = trimmed.match(PATTERNS.bookNoCity);
+    if (m) {
+      var authorNoCity = m[1].trim();
+      if (authorNoCity.length < 120 && !/[!?]/.test(authorNoCity) && !/\d\./.test(authorNoCity) && !/\.\s+[a-z]/.test(authorNoCity)) {
+        return {
+          type: 'book',
+          author: authorNoCity,
+          title: m[2].trim(),
+          city: '',
+          publisher: m[3].trim(),
+          year: m[4],
+          pages: (m[5] || '').trim(),
           translator: translator, urlDoi: urlDoi, raw: trimmed
         };
       }
@@ -970,6 +1029,13 @@ document.addEventListener('DOMContentLoaded', function () {
           field('Publisher', c.publisher) +
           field('Year', c.year) +
           field('Pages', c.pages);
+      } else if (c.type === 'dissertation') {
+        fieldsHtml =
+          field('Author', c.author) +
+          field('Title', c.title) +
+          field('Institution', c.institution) +
+          field('Year', c.year) +
+          field('Page', c.page || '');
       } else if (c.type === 'mixed') {
         typeLabel = 'Mixed';
         var preambleDiv = c.preamble ? 
@@ -1132,7 +1198,18 @@ document.addEventListener('DOMContentLoaded', function () {
   //  DRAG & DROP + FILE HANDLING
   // ══════════════════════════════════════════════════════════
 
-  dropzone.addEventListener('click', function () { fileInput.click(); });
+  dropzone.addEventListener('click', function () { openFilePicker(); });
+
+  if (browseBtn) {
+    browseBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      openFilePicker();
+    });
+  }
+
+  // Prevent browser from opening dropped files in the window
+  document.addEventListener('dragover', function (e) { e.preventDefault(); });
+  document.addEventListener('drop', function (e) { e.preventDefault(); });
 
   dropzone.addEventListener('dragover', function (e) {
     e.preventDefault();
