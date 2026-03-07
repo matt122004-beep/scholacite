@@ -190,9 +190,23 @@ document.addEventListener('DOMContentLoaded', function () {
           fallback.segmentIndex = segIdx;
           allCitations.push(fallback);
         } else {
-          parsed.discursive = true;
-          parsed.needsReview = true;
-          allCitations.push(parsed);
+          // Try mixed detection (see-verb anchoring)
+          var mixed = tryMixedDetection(cleaned);
+          if (mixed) {
+            mixed.sourceFootnote = footnoteIndex;
+            mixed.segmentIndex = segIdx;
+            // Add source tracking to nested citations
+            mixed.citations.forEach(function(cit) {
+              cit.sourceFootnote = footnoteIndex;
+              cit.segmentIndex = segIdx;
+            });
+            allCitations.push(mixed);
+          } else {
+            // Truly discursive
+            parsed.discursive = true;
+            parsed.needsReview = true;
+            allCitations.push(parsed);
+          }
         }
       } else {
         allCitations.push(parsed);
@@ -218,6 +232,67 @@ document.addEventListener('DOMContentLoaded', function () {
       };
     }
     return null;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  MIXED FOOTNOTE DETECTION (v3.8 — see-verb anchoring)
+  // ══════════════════════════════════════════════════════════
+
+  const SEE_VERBS = /\b(see(?:\s+also)?|cf\.(?:\s+also)?|compare|contra|note(?:\s+also)?|for\s+which\s+see)\b/i;
+
+  function findMixedBoundary(text) {
+    var m = text.match(SEE_VERBS);
+    if (!m) return null;
+    var triggerEnd = m.index + m[0].length;
+    return {
+      preamble: text.slice(0, triggerEnd).trim(),
+      remainder: text.slice(triggerEnd).trim()
+    };
+  }
+
+  function validatePreamble(preamble) {
+    if (preamble.length < 10 || preamble.length > 200) return false;
+    // If preamble contains a publication year pattern, it's a trailing "see also" on an existing citation
+    if (/,\s*\d{4}[)\.]/.test(preamble)) return false;
+    return true;
+  }
+
+  function parseMixedRemainder(remainder) {
+    var segments = splitTopLevelSemicolons(remainder);
+    var results = segments.map(function(seg) { return parseCitation(seg.trim()); });
+    var parsed = results.filter(function(r) { return r.type !== 'unknown' && r.type !== 'discursive'; });
+    
+    if (parsed.length === 0 || (parsed.length / segments.length < 0.5)) {
+      return null;
+    }
+    return parsed;
+  }
+
+  function authorSanityCheck(citation) {
+    var author = citation.author || '';
+    if (author.charAt(0) === '"') return false;
+    if (/\b(argued|stated|noted|remarked|wrote)\b/i.test(author)) return false;
+    if (author.length > 80) return false;
+    return true;
+  }
+
+  function tryMixedDetection(text) {
+    var boundary = findMixedBoundary(text);
+    if (!boundary) return null;
+    if (!validatePreamble(boundary.preamble)) return null;
+    
+    var citations = parseMixedRemainder(boundary.remainder);
+    if (!citations) return null;
+    
+    // Author sanity check on all extracted citations
+    if (!citations.every(authorSanityCheck)) return null;
+    
+    return {
+      type: 'mixed',
+      preamble: boundary.preamble,
+      citations: citations,
+      raw: text
+    };
   }
 
 
@@ -485,6 +560,27 @@ document.addEventListener('DOMContentLoaded', function () {
       // Primary sources: pass through unchanged
       if (c.type === 'primary') {
         return { original: c.raw, formatted: c.raw, formattedHtml: escapeHtml(c.raw), type: 'primary', isFirst: true, missingFields: [], sourceFootnote: c.sourceFootnote, segmentIndex: c.segmentIndex };
+      }
+
+      // Mixed footnotes: preamble + formatted citations
+      if (c.type === 'mixed') {
+        var mixedFormattedCitations = [];
+        c.citations.forEach(function(cit) {
+          var citResult = reformatCitations([cit], styleName)[0];
+          mixedFormattedCitations.push(citResult.formattedHtml || citResult.formatted);
+        });
+        var mixedFull = (c.preamble ? c.preamble + ' ' : '') + mixedFormattedCitations.join('; ');
+        var mixedPlain = mixedFull.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
+        return {
+          original: c.raw,
+          formatted: mixedPlain,
+          formattedHtml: (c.preamble ? '<span style="font-style:italic;color:#666;">' + escapeHtml(c.preamble) + '</span> ' : '') + mixedFormattedCitations.join('; '),
+          type: 'mixed',
+          isFirst: true,
+          missingFields: [],
+          sourceFootnote: c.sourceFootnote,
+          segmentIndex: c.segmentIndex
+        };
       }
 
       // Unknown citations: flag for manual review
@@ -853,6 +949,20 @@ document.addEventListener('DOMContentLoaded', function () {
           field('Publisher', c.publisher) +
           field('Year', c.year) +
           field('Pages', c.pages);
+      } else if (c.type === 'mixed') {
+        typeLabel = 'Mixed';
+        var preambleDiv = c.preamble ? 
+          '<div style="color:#8a6d14;font-style:italic;margin-bottom:0.4rem;padding:0.4rem;background:#fffaf0;border-left:2px solid #d65e11;">' +
+          '<strong>Preamble:</strong> ' + escapeHtml(c.preamble) + '</div>' : '';
+        var citList = '<div style="margin-top:0.4rem;"><strong>Extracted citations:</strong><ul style="margin:0.4rem 0 0 1.5rem;padding:0;">';
+        c.citations.forEach(function(cit) {
+          var citType = cit.type === 'book' ? 'Book' : (cit.type === 'journal' ? 'Journal' : (cit.type === 'chapter' ? 'Chapter' : 'Citation'));
+          citList += '<li style="margin:0.2rem 0;font-size:0.85rem;">' + citType + ': ' +
+            (cit.author ? escapeHtml(cit.author) : '') +
+            (cit.title ? ', ' + escapeHtml(cit.title) : '') + '</li>';
+        });
+        citList += '</ul></div>';
+        fieldsHtml = preambleDiv + citList;
       } else if (c.type === 'subsequent' || c.type === 'fallback') {
         typeLabel = 'Subsequent';
         fieldsHtml =
@@ -908,6 +1018,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var badgeClass, badgeLabel;
       if (r.type === 'unknown') { badgeClass = 'unknown'; badgeLabel = 'Manual review'; }
       else if (r.type === 'primary') { badgeClass = 'primary'; badgeLabel = 'Primary source'; }
+      else if (r.type === 'mixed') { badgeClass = 'first'; badgeLabel = 'Mixed content'; }
       else if (style.system === 'author-date' && r.type !== 'unknown' && r.type !== 'primary') { badgeClass = 'first'; badgeLabel = 'In-text'; }
       else if (r.isFirst) { badgeClass = 'first'; badgeLabel = 'First citation'; }
       else { badgeClass = 'subsequent'; badgeLabel = 'Subsequent'; }
