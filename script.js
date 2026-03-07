@@ -1465,11 +1465,24 @@ document.addEventListener('DOMContentLoaded', function () {
           children: [new D.TextRun({ text: 'Reformatted Citations (' + selectedJournal + ')', bold: true, font: 'Times New Roman', size: 28 })],
           heading: D.HeadingLevel.HEADING_1
         }));
-        reformattedCitations.forEach(function (r, i) {
-          var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
-          runs.unshift(new D.TextRun({ text: (i + 1) + '. ', bold: true, font: 'Times New Roman', size: 24 }));
-          docParagraphs.push(new D.Paragraph({ children: runs, spacing: { after: 200 } }));
-        });
+
+        if (style.system !== 'author-date') {
+          // Keep citations in Word footnote pane even when body extraction fails.
+          // Emit placeholder paragraphs with only footnote reference markers.
+          reformattedCitations.forEach(function (_, i) {
+            docParagraphs.push(new D.Paragraph({
+              children: [new D.FootnoteReferenceRun(i + 1)],
+              spacing: { after: 120 }
+            }));
+          });
+        } else {
+          // Author-date systems intentionally place citations in body text.
+          reformattedCitations.forEach(function (r, i) {
+            var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
+            runs.unshift(new D.TextRun({ text: (i + 1) + '. ', bold: true, font: 'Times New Roman', size: 24 }));
+            docParagraphs.push(new D.Paragraph({ children: runs, spacing: { after: 200 } }));
+          });
+        }
       }
 
       var docOpts = {
