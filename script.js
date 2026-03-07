@@ -1,4 +1,4 @@
-// ScholaCite v3.6 — Citation Reformatter Engine (Parser Hardening)
+// ScholaCite v3.8 — Citation Reformatter Engine (Mixed Detection + Export Hardening)
 // All processing is client-side. No data leaves the browser.
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -270,6 +270,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function authorSanityCheck(citation) {
     var author = citation.author || '';
+    if (!author) return false;
+    if (/^[a-z]/.test(author)) return false;
     if (author.charAt(0) === '"') return false;
     if (/\b(argued|stated|noted|remarked|wrote)\b/i.test(author)) return false;
     if (author.length > 80) return false;
@@ -588,6 +590,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return { original: c.raw, formatted: c.raw, formattedHtml: escapeHtml(c.raw), type: 'unknown', isFirst: true, missingFields: [], sourceFootnote: c.sourceFootnote, segmentIndex: c.segmentIndex };
       }
 
+      // Handle Ibid./Ibidem citations
+      if (c.type === 'ibid') {
+        var ibidText = 'Ibid.' + (c.page ? ', ' + c.page : '');
+        if (style.system === 'author-date') {
+          ibidText = '(Ibid' + (c.page ? ': ' + hyphenPages(c.page) : '') + ')';
+        }
+        return { original: c.raw, formatted: ibidText, formattedHtml: escapeHtml(ibidText), type: 'ibid', isFirst: false, missingFields: [], sourceFootnote: c.sourceFootnote, segmentIndex: c.segmentIndex };
+      }
+
       // Handle pre-detected subsequent/short-form citations
       if (c.type === 'subsequent') {
         var authKey = (c.author || '').toLowerCase();
@@ -822,6 +833,16 @@ document.addEventListener('DOMContentLoaded', function () {
       };
     }
 
+    // Try Ibid./Ibidem references
+    var ibidMatch = trimmed.match(/^Ibid(?:em)?\.(?:,\s*([\d\-\u2013]+(?:[\-\u2013]\d+)?))?/i);
+    if (ibidMatch) {
+      return {
+        type: 'ibid',
+        page: ibidMatch[1] || '',
+        raw: trimmed
+      };
+    }
+
     return { type: 'unknown', raw: trimmed };
   }
 
@@ -963,6 +984,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         citList += '</ul></div>';
         fieldsHtml = preambleDiv + citList;
+      } else if (c.type === 'ibid') {
+        typeLabel = 'Ibid.';
+        fieldsHtml =
+          field('Pages', c.page || '') +
+          '<div style="color:#1a56db;font-style:italic;margin-top:0.3rem;">Ibid. reference — treated as subsequent citation.</div>';
       } else if (c.type === 'subsequent' || c.type === 'fallback') {
         typeLabel = 'Subsequent';
         fieldsHtml =
@@ -1156,8 +1182,15 @@ document.addEventListener('DOMContentLoaded', function () {
       showToast('Only .docx files are supported.', true);
       return;
     }
+
+    // Large-file guard: mammoth can hang/freeze on big files in-browser
+    var sizeKb = file.size / 1024;
+    if (sizeKb > 150) {
+      showToast('⚠️ Large file detected (' + sizeKb.toFixed(1) + ' KB). Files over 150 KB may process slowly or freeze in-browser. Consider splitting the document first.', true);
+    }
+
     currentFile = file;
-    fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+    fileName.textContent = file.name + ' (' + sizeKb.toFixed(1) + ' KB)';
     fileInfo.classList.remove('hidden');
     reformatBtn.disabled = false;
     resultsSection.classList.add('hidden');
@@ -1438,5 +1471,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 2500);
   }
 
-  console.log('ScholaCite v3.5 loaded');
+  console.log('ScholaCite v3.8 loaded');
 });
