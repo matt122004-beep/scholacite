@@ -687,7 +687,7 @@ document.addEventListener('DOMContentLoaded', function () {
     m = trimmed.match(PATTERNS.book);
     if (m) {
       var authorCandidate = m[1].trim();
-      if (authorCandidate.length < 120 && !/[.!?]/.test(authorCandidate)) {
+      if (authorCandidate.length < 120 && !/[!?]/.test(authorCandidate) && !/\d\./.test(authorCandidate) && !/\.\s+[a-z]/.test(authorCandidate)) {
         return {
           type: 'book',
           author: authorCandidate,
