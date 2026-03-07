@@ -8,6 +8,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    </style>
 </head>
 <body>
 
@@ -64,7 +77,7 @@
                     <p class="dropzone-label">Drag &amp; drop your <strong>.docx</strong> file here</p>
                     <p class="dropzone-or">or</p>
                     <label id="browse-btn" class="btn tertiary browse-btn" for="file-input">Browse Files</label>
-                    <input type="file" id="file-input" accept=".docx" hidden>
+                    <input type="file" id="file-input" accept=".docx" class="sr-only">
                 </div>
                 <div class="dropzone-active-overlay" id="dropzone-overlay">Drop file here</div>
             </div>
@@ -163,7 +176,7 @@
 
     <footer>
         <div class="container">
-            <p>ScholaCite v3.10 · Client-side only · No data leaves your browser</p>
+            <p>ScholaCite v3.11 · Client-side only · No data leaves your browser</p>
         </div>
     </footer>
 

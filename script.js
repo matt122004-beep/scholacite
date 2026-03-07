@@ -1203,6 +1203,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (browseBtn) {
     browseBtn.addEventListener('click', function (e) {
       e.preventDefault();
+      e.stopPropagation();
       openFilePicker();
     });
   }
