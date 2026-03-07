@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if (authors.length > 2) {
       auth = authorLastOnly(authors[0]) + ' et al.';
     }
-    var ref = '(' + auth + ' ' + (c.year || '');
+    var ref = '(' + auth + ', ' + (c.year || '');
     if (c.pages) ref += ': ' + hyphenPages(c.pages);
     ref += ')';
     return ref;
@@ -367,16 +367,19 @@ document.addEventListener('DOMContentLoaded', function () {
         bookBiblio: function (c) {
           var auth = authorInitials(splitAuthors(c.author)[0]);
           var series = c.series ? ' (' + c.series + '; ' + (c.city||'') + ': ' + (c.publisher||'') + ')' : ' (' + (c.city||'') + ': ' + (c.publisher||'') + ')';
-          return auth + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + c.year + '&nbsp;&nbsp;&nbsp;&nbsp;<em>' + cleanTitle(c.title) + '</em>' + series + '.';
+          return auth + ' (' + c.year + ') <em>' + cleanTitle(c.title) + '</em>' + series + '.';
         },
         journalBiblio: function (c) {
           var auth = authorInitials(splitAuthors(c.author)[0]);
-          return auth + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + c.year + '&nbsp;&nbsp;&nbsp;&nbsp;\u2018' + cleanTitle(c.title) + '\u2019, <em>' + c.journal + '</em> ' + c.volume + (c.issue ? '.' + c.issue : '') + ': ' + hyphenPages(c.pages) + '.';
+          var pages = c.pages ? ', pp. ' + hyphenPages(c.pages) : '';
+          var issue = c.issue ? '(' + c.issue + ')' : '';
+          return auth + ' (' + c.year + ') \u2018' + cleanTitle(c.title) + '\u2019, <em>' + c.journal + '</em> ' + c.volume + issue + pages + '.';
         },
         chapterBiblio: function (c) {
           var auth = authorInitials(splitAuthors(c.author)[0]);
           var edStr = c.editor ? c.editor + ' (ed.)' : '';
-          return auth + '<br>&nbsp;&nbsp;&nbsp;&nbsp;' + c.year + '&nbsp;&nbsp;&nbsp;&nbsp;\u2018' + cleanTitle(c.title) + '\u2019, in ' + edStr + ', <em>' + cleanTitle(c.bookTitle||'') + '</em> (' + (c.city||'') + ': ' + (c.publisher||'') + '): ' + hyphenPages(c.pages) + '.';
+          var pages = c.pages ? ', pp. ' + hyphenPages(c.pages) : '';
+          return auth + ' (' + c.year + ') \u2018' + cleanTitle(c.title) + '\u2019, in ' + edStr + ', <em>' + cleanTitle(c.bookTitle||'') + '</em> (' + (c.city||'') + ': ' + (c.publisher||'') + ')' + pages + '.';
         },
         // Footnote format (for discursive notes only — not citations)
         bookFirst: function (c) { return jsntInText(c); },
@@ -966,7 +969,8 @@ document.addEventListener('DOMContentLoaded', function () {
           text: text,
           tag: el.tagName.toLowerCase(),
           // Check for footnote references (superscript links)
-          hasFootnoteRefs: el.querySelectorAll('a[href^="#footnote-"]').length > 0
+          hasFootnoteRefs: el.querySelectorAll('a[href^="#footnote-"]').length > 0,
+          footnoteRefCount: el.querySelectorAll('a[href^="#footnote-"]').length
         });
       }
     });
@@ -1410,7 +1414,9 @@ document.addEventListener('DOMContentLoaded', function () {
         extractedBodyParagraphs.forEach(function (bp) {
           var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
 
-          if (bp.hasFootnoteRefs && fnIdx < reformattedCitations.length) {
+          // Add ALL in-text citations for this paragraph
+          var refCount = bp.footnoteRefCount || (bp.hasFootnoteRefs ? 1 : 0);
+          for (var i = 0; i < refCount && fnIdx < reformattedCitations.length; i++) {
             var r = reformattedCitations[fnIdx];
             fnIdx++;
             // Append in-text citation after the text
@@ -1448,7 +1454,9 @@ document.addEventListener('DOMContentLoaded', function () {
         extractedBodyParagraphs.forEach(function (bp) {
           var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
 
-          if (bp.hasFootnoteRefs && fnIdx < reformattedCitations.length) {
+          // Add ALL footnote refs for this paragraph
+          var refCount = bp.footnoteRefCount || (bp.hasFootnoteRefs ? 1 : 0);
+          for (var i = 0; i < refCount && fnIdx < reformattedCitations.length; i++) {
             fnIdx++;
             children.push(new D.FootnoteReferenceRun(fnIdx));
           }

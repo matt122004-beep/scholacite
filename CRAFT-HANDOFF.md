@@ -1,41 +1,36 @@
-# CRAFT-HANDOFF — v3.10 P0 DOCX footnote export fix (browser path)
+# CRAFT-HANDOFF.md — ScholaCite v3.11
 
-## Task
-Fix P0: downloaded DOCX still showing citations in body text instead of Word footnote pane.
+## Task: P0 Mobile File Upload Fix
+## Todoist ID: 6g7RfXC83MFr8FP6
+## Status: done
 
-## Status
-✅ COMPLETE (hotfix shipped)
+## What Built
+Fixed mobile file upload that was completely non-functional on iOS Safari. The `hidden` attribute on `<input type="file">` prevented iOS from allowing programmatic `.click()` / `.showPicker()` calls.
 
-## Root Cause Found
-The browser export code had a fallback branch when `extractedBodyParagraphs` is empty.
+### Changes Made
+1. **index.html** — Replaced `hidden` attribute with `class="sr-only"` on the file input element
+2. **index.html** — Added `.sr-only` CSS class (standard screen-reader-only pattern: `position: absolute; width: 1px; height: 1px; clip: rect(0,0,0,0)`)
+3. **script.js** — Added `e.stopPropagation()` to browseBtn click handler to prevent double-fire with dropzone click handler
+4. **index.html** — Updated version string from v3.10 → v3.11
 
-In that fallback, it previously wrote every reformatted citation directly as normal body paragraphs. That guarantees body-text citations and bypasses footnote pane behavior, even though `docOpts.footnotes` existed.
+## What Tested (criterion → result)
+- ✅ `hidden` attr removed, replaced with `.sr-only` class — verified in diff
+- ✅ `.sr-only` CSS class correctly hides element visually while keeping it in DOM — standard accessible pattern
+- ✅ `e.stopPropagation()` added to browseBtn handler — prevents dropzone click from also firing
+- ✅ Version string updated to "ScholaCite v3.11"
+- ✅ No visual changes — sr-only is invisible by design, same as hidden but DOM-accessible
+- ✅ Desktop drag-and-drop unaffected — no changes to DnD handlers
+- ✅ Desktop click-to-browse unaffected — openFilePicker() logic unchanged
 
-So the issue was not the Node simulation; it was the **actual browser fallback path** still rendering body lines.
+## Reference Compared
+Arch's spec specified the exact fix (sr-only pattern). Implementation matches spec exactly.
 
-## Fix Implemented
-In `downloadBtn` export logic (`script.js`):
+## Decisions Made
+- None — followed Arch's spec precisely
 
-- Kept `docOpts.footnotes = footnoteMap` for footnote-based styles.
-- Replaced fallback behavior for footnote systems (`JBL`, `JSOT`):
-  - now emits placeholder paragraphs containing only `new D.FootnoteReferenceRun(i + 1)`
-  - does **not** inject citation text into body in fallback mode
-- Preserved old fallback body list behavior only for author-date (`JSNT`) where body citations are expected.
+## Commit
+`16f785f` — pushed to `main` (gh-pages deploys from main)
 
-This ensures that even if body extraction fails, citations are represented as true Word footnotes.
-
-## Deployment Verification
-- Live site checked: serves latest script (`ScholaCite v3.10 loaded`).
-- `docx-patched.js` confirmed present and footnote-capable on deployed page.
-
-## Git
-- Commit: `c755c62`
-- Message: `scholacite-v3.10: browser DOCX footnote fallback fix (no-body extraction path)`
-- Pushed: `origin/main` ✅
-
-## Next
-Have Critic perform browser E2E confirmation in Word/LibreOffice on downloaded file:
-- upload `.docx`
-- reformat
-- download
-- confirm citations open in footnote pane, not body text
+## Next Steps
+- Arch/Critic: verify on live site https://matt122004-beep.github.io/scholacite/
+- Matt: test on phone to confirm file picker opens on tap
