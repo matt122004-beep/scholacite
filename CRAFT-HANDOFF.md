@@ -1,62 +1,44 @@
-# CRAFT-HANDOFF — scholacite-v3.9
+# CRAFT-HANDOFF — scholacite-v3.10
 
 ## Task
-v3.9 build: chapter regex fix + parser ceiling push + discursive categorization. 
-Priority addendum included: fix upload UI P0 first.
+ScholaCite v3.10: cosmetic fixes + parser ceiling push.
 
 ## Status
-✅ COMPLETE (attempt delivered)
+✅ Complete (code shipped)
 
 ## What Built
+1. **Version strings updated to v3.10**
+   - `script.js` header comment → `// ScholaCite v3.10`
+   - load log → `ScholaCite v3.10 loaded`
+   - footer in `index.html` → `ScholaCite v3.10 ...`
 
-### P0 Upload UI hardening (done first)
-- Added robust file picker helper `openFilePicker()` with `showPicker()` fallback to `.click()`.
-- Wired both dropzone click and Browse button click to file picker.
-- Added document-level `dragover/drop` `preventDefault()` to stop browser from navigating away on file drop.
-- Preserved existing dropzone/file-input handlers.
+2. **Browse button JS listener mismatch fixed**
+   - Added `id="browse-btn"` to the browse `<label ... for="file-input">`
+   - This matches existing JS selector (`getElementById('browse-btn')`) so explicit listener now works, while native `label[for]` fallback remains intact.
 
-### Feature 1 — Chapter regex fix
-- Updated chapter strict/loose title groups to accept comma-before-closing-quote format:
-  - Handles both `"Title" in` and `"Title," in`.
+3. **Ceiling push regex updates**
+   - `SEE_VERBS` broadened to catch `Cf`, `Cf.`, `C.F.` variants:
+     - `c\.?f\.?` added.
+   - **Book pattern** upgraded to support optional series between title and publication parens:
+     - `Author, *Title*, SERIES (City: Publisher, Year), page`
+   - **Subsequent pattern** expanded for:
+     - multi-author forms (`Smith and Jones`, `Smith & Jones`)
+     - `et al.` forms
+     - ranged pages already preserved (`892–943`, etc.)
 
-### Feature 2 — Ceiling push patterns
-- Added **dissertation** regex parser branch (`type: dissertation`), with fields: author/title/institution/year/page.
-- Expanded **book city** regex to accept dots/digits/series-like city preambles.
-- Added **bookNoCity** variant for refs like `(Publisher, Year), page`.
-- Added formatting + parsed-render handling for dissertation type.
-
-### Feature 3 — Primary source expansion
-- Expanded primary detection with:
-  - optional `LXX` biblical refs,
-  - Mishnah/Talmud refs (`m. ...`, `b. ...`).
-
-### Existing v3.8 fixes retained
-- Lowercase author guard in mixed sanity check.
-- Ibid parsing branch retained.
-- Large-file warning retained.
-
-## Discursive sampling / categorization
-Generated file:
-- `runtime/discursive-sample-v3.9.json`
-
-First 50 discursive category breakdown:
-- A Genuine commentary: **14**
-- B Dissertation/thesis: **0**
-- C Multi-volume: **0**
-- D Primary source: **6**
-- E URL/online: **1**
-- F Other fixable: **29**
-
-Most frequent fixable cluster in F: non-standard book-like refs with series/publisher variants and no-city publisher patterns (addressed via book regex expansion + bookNoCity).
-
-## Parse rate achieved
-- **69.62%** (from local corpus run approximation script; below 72% target).
+## Verification
+- `node -c script.js` ✅
+- Grep verification for:
+  - v3.10 strings
+  - browse button id
+  - updated SEE_VERBS
+  - updated book/subsequent regexes
 
 ## Git
-- Commit: `639ff8b`
-- Message: `scholacite-v3.9: chapter fix + ceiling push (dissertation/multivolume/primary patterns) — parse rate 69.62%`
+- Commit: `765ec76`
+- Message: `scholacite-v3.10: browse fix + version + series titles + ceiling push`
 - Pushed: `origin/main` ✅
 
 ## Notes
-- DOCX export remained verified working from prior QA.
-- Upload UI now explicitly hardened for click + drag/drop pathways to remove silent no-op behavior.
+- This pass focuses exactly on the requested v3.10 fixes and parser-catch expansions.
+- If needed next pass can target remaining high-volume unknown clusters from corpus for another parse-rate jump.
