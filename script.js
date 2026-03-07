@@ -182,51 +182,14 @@ document.addEventListener('DOMContentLoaded', function () {
       parsed.sourceFootnote = footnoteIndex;
       parsed.segmentIndex = segIdx;
       
-      // If unknown, try fallback and mixed detection
+      // If unknown and has potential fallback, try to extract
       if (parsed.type === 'unknown') {
         var fallback = attemptFallbackExtraction(cleaned);
         if (fallback) {
           fallback.sourceFootnote = footnoteIndex;
           fallback.segmentIndex = segIdx;
           allCitations.push(fallback);
-        } else if (hasCitationEmbedded(cleaned)) {
-          // Try to extract embedded citations from mixed footnotes
-          var mixed = extractFromMixed(cleaned);
-          var strippedParsed = parseCitation(mixed.stripped);
-          
-          if (strippedParsed.type !== 'unknown') {
-            // Successfully parsed the stripped citation
-            var citationsArray = [strippedParsed];
-            // If stripped text contains semicolons, try to parse each piece
-            var stripSegments = splitTopLevelSemicolons(mixed.stripped);
-            if (stripSegments.length > 1) {
-              citationsArray = [];
-              stripSegments.forEach(function (seg) {
-                var p = parseCitation(seg.trim());
-                if (p.type !== 'unknown') {
-                  citationsArray.push(p);
-                }
-              });
-            }
-            
-            // Build mixed object
-            var mixedObj = {
-              type: 'mixed',
-              discursive_preamble: mixed.preamble,
-              citations: citationsArray,
-              sourceFootnote: footnoteIndex,
-              segmentIndex: segIdx,
-              raw: cleaned
-            };
-            allCitations.push(mixedObj);
-          } else {
-            // Could not parse even after stripping preamble
-            parsed.discursive = true;
-            parsed.needsReview = true;
-            allCitations.push(parsed);
-          }
         } else {
-          // Truly discursive
           parsed.discursive = true;
           parsed.needsReview = true;
           allCitations.push(parsed);
@@ -257,41 +220,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return null;
   }
 
-  // Mixed footnote detection: check if text contains embedded citation patterns
-  function hasCitationEmbedded(text) {
-    // Look for parenthetical publisher pattern: (City: Publisher, YYYY)
-    var pubPattern = /\([A-Z][a-zA-Z\s,;]+:\s*.+?,\s*\d{4}\)/;
-    // Look for subsequent pattern: Author, *Title* or "Title", page
-    var subPattern = /[A-Z][a-z]+,\s+(?:\*[^*]+\*|["'][^"']+["']),\s+\d+/;
-    return pubPattern.test(text) || subPattern.test(text);
-  }
-
-  // Extract embedded citations from mixed footnotes by stripping discursive preamble
-  function extractFromMixed(text) {
-    var preamble = '';
-    var stripped = text;
-    
-    // Common preamble patterns to strip
-    var preamblePatterns = [
-      // "For X, see ...", "See also ...", "On this point, cf. ..."
-      /^(.{0,120}?\b(?:see|cf\.|compare|contra|on this|for a|for this|for the)\b.{0,60}?[,.])\s*/i,
-      // Sentence-like preamble ending in punctuation
-      /^([A-Z][^.!?]{10,80}[.,])\s+/
-    ];
-    
-    for (var i = 0; i < preamblePatterns.length; i++) {
-      var pat = preamblePatterns[i];
-      var m = stripped.match(pat);
-      if (m && m[0].length < stripped.length * 0.6) {
-        // Only strip if preamble is less than 60% of the footnote
-        preamble = m[1].trim();
-        stripped = stripped.slice(m[0].length).trim();
-        break;
-      }
-    }
-    
-    return { preamble: preamble, stripped: stripped };
-  }
 
   const STYLES = {
     // ── JBL: American SBLHS Footnotes ──────────────────────
@@ -557,29 +485,6 @@ document.addEventListener('DOMContentLoaded', function () {
       // Primary sources: pass through unchanged
       if (c.type === 'primary') {
         return { original: c.raw, formatted: c.raw, formattedHtml: escapeHtml(c.raw), type: 'primary', isFirst: true, missingFields: [], sourceFootnote: c.sourceFootnote, segmentIndex: c.segmentIndex };
-      }
-
-      // Mixed footnotes: format preamble + extracted citations
-      if (c.type === 'mixed') {
-        var mixedFormatted = c.discursive_preamble ? c.discursive_preamble + ' ' : '';
-        var citationFormatteds = [];
-        
-        c.citations.forEach(function(cit) {
-          var citResult = reformatCitations([cit], styleName)[0];
-          citationFormatteds.push(citResult.formattedHtml || citResult.formatted);
-        });
-        
-        mixedFormatted += citationFormatteds.join('; ');
-        return { 
-          original: c.raw, 
-          formatted: mixedFormatted.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' '),
-          formattedHtml: (c.discursive_preamble ? '<span style="color:#8a6d14;">' + escapeHtml(c.discursive_preamble) + '</span> ' : '') + citationFormatteds.join('; '), 
-          type: 'mixed', 
-          isFirst: true, 
-          missingFields: [],
-          sourceFootnote: c.sourceFootnote,
-          segmentIndex: c.segmentIndex
-        };
       }
 
       // Unknown citations: flag for manual review
@@ -948,21 +853,6 @@ document.addEventListener('DOMContentLoaded', function () {
           field('Publisher', c.publisher) +
           field('Year', c.year) +
           field('Pages', c.pages);
-      } else if (c.type === 'mixed') {
-        typeLabel = 'Mixed';
-        var preambleHtml = c.discursive_preamble ? 
-          '<div style="color:#8a6d14;font-style:italic;margin-bottom:0.4rem;padding:0.4rem;background:#fffaf0;border-left:2px solid #d65e11;">' +
-          '<strong>Preamble:</strong> ' + escapeHtml(c.discursive_preamble) + '</div>' : '';
-        var citationsHtml = '<div style="margin-top:0.4rem;"><strong>Extracted citations:</strong>' +
-          '<ul style="margin:0.4rem 0 0 1.5rem;padding:0;">';
-        c.citations.forEach(function(cit) {
-          var citLabel = cit.type === 'book' ? 'Book' : (cit.type === 'journal' ? 'Journal' : (cit.type === 'chapter' ? 'Chapter' : 'Citation'));
-          citationsHtml += '<li style="margin:0.2rem 0;font-size:0.85rem;">' + citLabel + ': ' + 
-            (cit.author ? escapeHtml(cit.author) : '') + 
-            (cit.title ? ', ' + escapeHtml(cit.title) : '') + '</li>';
-        });
-        citationsHtml += '</ul></div>';
-        fieldsHtml = preambleHtml + citationsHtml;
       } else if (c.type === 'subsequent' || c.type === 'fallback') {
         typeLabel = 'Subsequent';
         fieldsHtml =
