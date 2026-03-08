@@ -1102,7 +1102,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (style.system === 'author-date') {
       var note = document.createElement('div');
       note.style.cssText = 'background:#e8f0fe;border:1px solid #b3d4fc;border-radius:6px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.85rem;color:#1a56db;';
-      note.innerHTML = '📋 <strong>Note:</strong> JSNT uses in-text author-date citations, not footnotes. Each footnote citation has been converted to an in-text reference. A bibliography/reference list is shown below.';
+      note.innerHTML = '📋 <strong>Note:</strong> JSNT uses author-date citations within footnotes. Citations have been reformatted to (Author, year: pages) format. A bibliography/reference list is generated below.';
       reformattedList.appendChild(note);
     }
 
@@ -1132,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       var leftLabel = 'Original footnote';
-      var rightLabel = style.system === 'author-date' ? 'In-text reference' : 'Reformatted';
+      var rightLabel = style.system === 'author-date' ? 'Reformatted (author-date)' : 'Reformatted';
 
       var fnNum = r.sourceFootnote !== undefined ? r.sourceFootnote : (i + 1);
       var segLabel = (r.segmentIndex > 0) ? ' — citation ' + (r.segmentIndex + 1) : '';
@@ -1409,27 +1409,32 @@ document.addEventListener('DOMContentLoaded', function () {
       var docParagraphs = [];
       var fnIdx = 0;
 
+      // ── All styles use footnotes (JSNT uses author-date FORMAT inside footnotes) ──
+      var footnoteMap = {};
+      reformattedCitations.forEach(function (r, i) {
+        var fnId = i + 1;
+        var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
+        footnoteMap[fnId] = { children: [new D.Paragraph({ children: runs })] };
+      });
+
+      extractedBodyParagraphs.forEach(function (bp) {
+        var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
+
+        // Add ALL footnote refs for this paragraph
+        var refCount = bp.footnoteRefCount || (bp.hasFootnoteRefs ? 1 : 0);
+        for (var i = 0; i < refCount && fnIdx < reformattedCitations.length; i++) {
+          fnIdx++;
+          children.push(new D.FootnoteReferenceRun(fnIdx));
+        }
+
+        var pOpts = { children: children, spacing: { after: 200 } };
+        if (bp.tag === 'h1') pOpts.heading = D.HeadingLevel.HEADING_1;
+        else if (bp.tag === 'h2') pOpts.heading = D.HeadingLevel.HEADING_2;
+        docParagraphs.push(new D.Paragraph(pOpts));
+      });
+
+      // JSNT also gets a bibliography/reference list at the end
       if (style.system === 'author-date') {
-        // ── JSNT: In-text citations + bibliography at end ──
-        extractedBodyParagraphs.forEach(function (bp) {
-          var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
-
-          // Add ALL in-text citations for this paragraph
-          var refCount = bp.footnoteRefCount || (bp.hasFootnoteRefs ? 1 : 0);
-          for (var i = 0; i < refCount && fnIdx < reformattedCitations.length; i++) {
-            var r = reformattedCitations[fnIdx];
-            fnIdx++;
-            // Append in-text citation after the text
-            children.push(new D.TextRun({ text: ' ' + r.formatted, font: 'Times New Roman', size: 24 }));
-          }
-
-          var pOpts = { children: children, spacing: { after: 200 } };
-          if (bp.tag === 'h1') pOpts.heading = D.HeadingLevel.HEADING_1;
-          else if (bp.tag === 'h2') pOpts.heading = D.HeadingLevel.HEADING_2;
-          docParagraphs.push(new D.Paragraph(pOpts));
-        });
-
-        // Add bibliography section
         docParagraphs.push(new D.Paragraph({ children: [], spacing: { before: 600 } }));
         docParagraphs.push(new D.Paragraph({
           children: [new D.TextRun({ text: 'Reference List', bold: true, font: 'Times New Roman', size: 28 })],
@@ -1441,31 +1446,6 @@ document.addEventListener('DOMContentLoaded', function () {
           var runs = parseHtmlToRuns(entry.html, D);
           docParagraphs.push(new D.Paragraph({ children: runs, spacing: { after: 200 }, indent: { hanging: 720 } }));
         });
-
-      } else {
-        // ── JBL / JSOT: Footnotes ──
-        var footnoteMap = {};
-        reformattedCitations.forEach(function (r, i) {
-          var fnId = i + 1;
-          var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
-          footnoteMap[fnId] = { children: [new D.Paragraph({ children: runs })] };
-        });
-
-        extractedBodyParagraphs.forEach(function (bp) {
-          var children = [new D.TextRun({ text: bp.text, font: 'Times New Roman', size: 24 })];
-
-          // Add ALL footnote refs for this paragraph
-          var refCount = bp.footnoteRefCount || (bp.hasFootnoteRefs ? 1 : 0);
-          for (var i = 0; i < refCount && fnIdx < reformattedCitations.length; i++) {
-            fnIdx++;
-            children.push(new D.FootnoteReferenceRun(fnIdx));
-          }
-
-          var pOpts = { children: children, spacing: { after: 200 } };
-          if (bp.tag === 'h1') pOpts.heading = D.HeadingLevel.HEADING_1;
-          else if (bp.tag === 'h2') pOpts.heading = D.HeadingLevel.HEADING_2;
-          docParagraphs.push(new D.Paragraph(pOpts));
-        });
       }
 
       // Fallback if no body paragraphs
@@ -1475,21 +1455,25 @@ document.addEventListener('DOMContentLoaded', function () {
           heading: D.HeadingLevel.HEADING_1
         }));
 
-        if (style.system !== 'author-date') {
-          // Keep citations in Word footnote pane even when body extraction fails.
-          // Emit placeholder paragraphs with only footnote reference markers.
-          reformattedCitations.forEach(function (_, i) {
-            docParagraphs.push(new D.Paragraph({
-              children: [new D.FootnoteReferenceRun(i + 1)],
-              spacing: { after: 120 }
-            }));
-          });
-        } else {
-          // Author-date systems intentionally place citations in body text.
-          reformattedCitations.forEach(function (r, i) {
-            var runs = parseHtmlToRuns(r.formattedHtml || r.formatted, D);
-            runs.unshift(new D.TextRun({ text: (i + 1) + '. ', bold: true, font: 'Times New Roman', size: 24 }));
-            docParagraphs.push(new D.Paragraph({ children: runs, spacing: { after: 200 } }));
+        // All styles use footnotes — emit placeholder paragraphs with footnote refs
+        reformattedCitations.forEach(function (_, i) {
+          docParagraphs.push(new D.Paragraph({
+            children: [new D.FootnoteReferenceRun(i + 1)],
+            spacing: { after: 120 }
+          }));
+        });
+
+        // JSNT also gets bibliography in fallback
+        if (style.system === 'author-date') {
+          docParagraphs.push(new D.Paragraph({ children: [], spacing: { before: 600 } }));
+          docParagraphs.push(new D.Paragraph({
+            children: [new D.TextRun({ text: 'Reference List', bold: true, font: 'Times New Roman', size: 28 })],
+            heading: D.HeadingLevel.HEADING_1
+          }));
+          var sorted = bibliographyEntries.slice().sort(function (a, b) { return a.sortKey.localeCompare(b.sortKey); });
+          sorted.forEach(function (entry) {
+            var runs = parseHtmlToRuns(entry.html, D);
+            docParagraphs.push(new D.Paragraph({ children: runs, spacing: { after: 200 }, indent: { hanging: 720 } }));
           });
         }
       }
@@ -1500,8 +1484,8 @@ document.addEventListener('DOMContentLoaded', function () {
           children: docParagraphs
         }]
       };
-      // Only add footnotes for footnote-based systems
-      if (style.system !== 'author-date') {
+      // All styles use footnotes (JSNT uses author-date format inside footnotes)
+      if (footnoteMap && Object.keys(footnoteMap).length > 0) {
         docOpts.footnotes = footnoteMap;
       }
 
